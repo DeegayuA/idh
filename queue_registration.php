@@ -9,7 +9,7 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo ucwords(str_replace('_',' ',$page)) ?> | Cashier Queuing System</title>
+    <title><?php echo ucwords(str_replace('_',' ',$page)) ?> | IDH Queuing System</title>
     <link rel="stylesheet" href="./Font-Awesome-master/css/all.min.css">
     <link rel="stylesheet" href="./css/bootstrap.min.css">
     <link rel="stylesheet" href="./select2/css/select2.min.css">
@@ -43,7 +43,7 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary bg-gradient" id="topNavBar">
         <div class="container">
             <a class="navbar-brand" href="./">
-            Queuing - Customer Registration
+            Queuing - Patient Registration
             </a>
         </div>
     </nav>
