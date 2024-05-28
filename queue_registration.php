@@ -72,6 +72,21 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
                                         <label for="customer_name" class="control-label text-info">Enter your Name</label>
                                         <input type="text" id="customer_name" name="customer_name" autofocus autocomplete="off" class="form-control form-control-lg rounded-0 border-0 border-bottom" required>
                                     </div>
+                                    <div class="form-group">
+                                        <label for="age" class="control-label text-info">Enter your Age</label>
+                                        <input type="number" id="age" name="age"  autocomplete="off" class="form-control form-control-lg rounded-0 border-0 border-bottom" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="sex" class="control-label text-info">Select Sex</label>
+                                        <select name="sex" id="sex" class="form-select rounded-0 border-0 border-bottom" required>
+                                            <option value="Male">Male</option>
+                                            <option value="Female">Female</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="phone_number" class="control-label text-info">Enter Phone Number</label>
+                                        <input type="text" id="phone_number" name="phone_number" autocomplete="off" class="form-control form-control-lg rounded-0 border-0 border-bottom" required>
+                                    </div>
                                     <div class="form-group text-center my-2">
                                         <button class="btn-primary btn-lg btn col-sm-4 rounded-0" type='submit'>Get Queue</button>
                                     </div>
