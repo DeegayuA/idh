@@ -13,7 +13,7 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LOGIN | Cashier Queuing System - Cashier - Side</title>
+    <title>LOGIN | IDH Queuing System - Doctor Side</title>
     <link rel="stylesheet" href="./../css/bootstrap.min.css">
     <link rel="stylesheet" href="./../select2/css/select2.min.css">
     <script src="./../js/jquery-3.6.0.min.js"></script>
@@ -30,14 +30,14 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
 <body class="bg-dark bg-gradient">
    <div class="h-100 d-flex jsutify-content-center align-items-center">
        <div class='w-100'>
-        <h3 class="py-5 text-center text-light">Cashier Queuing System - Cashier Side</h3>
+        <h3 class="py-5 text-center text-light">IDH Queuing System - Doctor Side</h3>
         <div class="card my-3 col-md-4 offset-md-4">
             <div class="card-body">
                 <form action="" id="login-form">
-                    <center><small>Please Select Cashier to Operate.</small></center>
+                    <center><small>Please Select Doctor Name to Operate.</small></center>
                     <div class="form-group">
-                        <label for="cashier_id" class="control-label">Cashier</label>
-                        <select name="cashier_id" id="cashier_id" data-placeholder="Please Select Cashier to Operate" class="custom-select2 select2">
+                        <label for="cashier_id" class="control-label">Doctor</label>
+                        <select name="cashier_id" id="cashier_id" data-placeholder="Please Select Doctor to Operate" class="custom-select2 select2">
                             <option disabled selected></option>
                             <?php 
                             $cashier = $conn->query("SELECT * FROM `cashier_list` where `status` = 1 order by `name` asc");

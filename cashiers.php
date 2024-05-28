@@ -1,7 +1,8 @@
 <div class="card">
     <div class="card-header d-flex justify-content-between">
-        <h3 class="card-title">Cashier List</h3>
+        <h3 class="card-title">Doctors List</h3>
         <div class="card-tools align-middle">
+        <button id="logoutAllCashiers" class="btn btn-flat btn-danger rounded-0 btn-sm py-1"><i class="fa fa-sign-out"></i> Logout All Doctors</button>
             <button class="btn btn-dark btn-sm py-1 rounded-0" type="button" id="create_new">Add New</button>
         </div>
     </div>
@@ -87,6 +88,24 @@
             _conf("Are you sure to delete <b>"+$(this).attr('data-name')+"</b> from list?",'delete_data',[$(this).attr('data-id')])
         })
     })
+    
+    $('#logoutAllCashiers').click(function(){
+        $.ajax({
+            url: 'logout_all_cashiers.php',
+            dataType: 'json',
+            error: function(err) {
+                console.log(err);
+            },
+            success: function(resp) {
+                if(resp.status === 'success') {
+                    alert('All Doctors logged out temporarily.');
+                } else {
+                    alert('Failed to logout all Doctors.');
+                }
+            }
+        });
+    });
+    
     function delete_data($id){
         $('#confirm_modal button').attr('disabled',true)
         $.ajax({
