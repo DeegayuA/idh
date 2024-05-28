@@ -84,16 +84,3 @@
         })
     })
 </script>
-<script>// JavaScript to detect window closure
-window.addEventListener('beforeunload', function(event) {
-    // Send AJAX request to update cashier status
-    var xhr = new XMLHttpRequest();
-    xhr.open('POST', 'update_cashier_status.php', true);
-    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-    xhr.onload = function() {
-        // Handle response if needed
-        console.log(xhr.responseText);
-    };
-    xhr.send('cashier_id=' + encodeURIComponent('<?php echo $_SESSION["cashier_id"]; ?>'));
-});
-</script>
