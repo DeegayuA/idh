@@ -21,7 +21,7 @@ if (isset($_GET['id'])) {
         $patientHistory = $conn->getPatientHistory($phone_number);
 
         // Calculate Estimated Waiting Time
-        $qry = $conn->query("SELECT COUNT(*) as count FROM `queue_list` WHERE `status` = 0");
+        $qry = $conn->query("SELECT COUNT(*) as count FROM `queue_list` WHERE `status` = 0 AND strftime('%Y-%m-%d', `date_created`) = strftime('%Y-%m-%d', 'now')");
         $row = $qry->fetchArray();
         $queuedPatients = $row['count']; // Number of patients in the queue with status = 0
         $estimatedWaitSeconds = $queuedPatients * 5 * 60; // Each patient takes approximately 5 minutes, converted to seconds
@@ -205,7 +205,7 @@ if (isset($_GET['id'])) {
         </center>
         <div class="bill-footer text-center">
             <?php if ($estimatedTime) : ?>
-                <p><b>Estimated Waiting Time: <?php echo $estimatedTime; ?></b></p>
+                <p><b>Estimated Time: <?php echo $estimatedTime; ?></b></p>
             <?php endif; ?>
             <p>Thank you for your patience / ඔබේ ඉවසීමට ස්තුතියි</p>
             <p id="generated-time">Generated on: <?php echo date("Y-m-d H:i:s"); ?></p>

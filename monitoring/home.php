@@ -29,7 +29,7 @@
                     $vid = scandir('./../video');
                     $video = isset($vid[2]) ? $vid[2]: "";
                 ?>
-                    <video id="loop-vid" src="./../video/<?php echo $video ?>" loop class="w-100 h-100"></video>
+                    <video id="loop-vid" src="./../video/<?php echo $video ?>" loop muted class="w-100 h-100"></video>
                 </div>
                 <div id="datetimefield" class="w-100  col-auto">
                     <div class="fs-1 text-center time fw-bold"></div>
