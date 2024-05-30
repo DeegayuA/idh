@@ -13,6 +13,7 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
     <link rel="stylesheet" href="./Font-Awesome-master/css/all.min.css">
     <link rel="stylesheet" href="./css/bootstrap.min.css">
     <link rel="stylesheet" href="./select2/css/select2.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
     <script src="./js/jquery-3.6.0.min.js"></script>
     <script src="./js/popper.min.js"></script>
     <script src="./js/bootstrap.min.js"></script>
@@ -22,128 +23,189 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
     <script src="./select2/js/select2.min.js"></script>
     <script src="./js/script.js"></script>
     <style>
-        :root{
-            --bs-success-rgb:71, 222, 152 !important;
+        :root {
+            --background-color: #ffffff;
+            --text-color: #000000;
+            --card-background: #f8f9fa;
+            --primary-color: #4b79a1;
+            --primary-hover: #283e51;
+            --border-radius: 10px;
+            --box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            --font-family: 'Montserrat', sans-serif;
         }
-        html,body{
-            height:100%;
-            width:100%;
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --background-color: #121212;
+                --text-color: #ffffff;
+                --card-background: #272727;
+                --primary-color: #4b79a1;
+                --primary-hover: #66a3d9;
+            }
         }
-        .form-control.border-0{
-            transition:border .2s cubic-bezier(0.4, 0, 1, 1);
+
+        html, body {
+            height: 100%;
+            width: 100%;
+            background: var(--background-color);
+            color: var(--text-color);
+            font-family: var(--font-family);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
         }
-        .form-control.border-0:focus{
-            box-shadow:unset !important;
-            border-color:var(--bs-info) !important;
+
+        .navbar {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            background: var(--primary-color);
+        }
+
+        .container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .card {
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            background: var(--card-background);
+            padding: 20px;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            border-radius: var(--border-radius);
+            width: 100%;
+            padding: 10px;
+            font-size: 1rem;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+            border-color: var(--primary-hover);
+        }
+
+        .form-control {
+            border-radius: var(--border-radius);
+            border: none;
+            border-bottom: 2px solid var(--primary-color);
+            transition: border-color 0.2s;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-hover);
+            box-shadow: none;
+        }
+        .text-info2{
+            color: var(--primary-hover);
+        }
+
+        .form-select {
+            border-radius: var(--border-radius);
+            border: none;
+            border-bottom: 2px solid var(--primary-color);
+            transition: border-color 0.2s;
+        }
+
+        .form-select:focus {
+            border-color: var(--primary-hover);
+            box-shadow: none;
+        }
+
+        .h5.card-title {
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .alert {
+            border-radius: var(--border-radius);
         }
     </style>
 </head>
 <body>
-    <main>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary bg-gradient" id="topNavBar">
         <div class="container">
             <a class="navbar-brand" href="./">
-            Queuing - Patient Registration
+                Queuing - Patient Registration
             </a>
         </div>
     </nav>
-    <div class="container py-3" id="page-container">
+    <div class="container">
         <?php 
             if(isset($_SESSION['flashdata'])):
         ?>
         <div class="dynamic_alert alert alert-<?php echo $_SESSION['flashdata']['type'] ?>">
-        <div class="float-end"><a href="javascript:void(0)" class="text-dark text-decoration-none" onclick="$(this).closest('.dynamic_alert').hide('slow').remove()">x</a></div>
+            <div class="float-end"><a href="javascript:void(0)" class="text-dark text-decoration-none" onclick="$(this).closest('.dynamic_alert').hide('slow').remove()">x</a></div>
             <?php echo $_SESSION['flashdata']['msg'] ?>
         </div>
         <?php unset($_SESSION['flashdata']) ?>
         <?php endif; ?>
-        <div class="container-fluid py-5">
-
-                <div class="row justify-content-center">
-                    <div class="col-md-7">
-
-                        <div class="card rouded-0 shadow">
-                            <div class="card-header rounded-0">
-                                <div class="h5 card-title">Get your Queue Number Here.</div>
-                            </div>
-                            <div class="card-body rounded-0">
-                                <form action="" id="queue-form">
-                                    <div class="form-group">
-                                        <label for="customer_name" class="control-label text-info">Enter your Name</label>
-                                        <input type="text" id="customer_name" name="customer_name" autofocus autocomplete="off" class="form-control form-control-lg rounded-0 border-0 border-bottom" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="age" class="control-label text-info">Enter your Age</label>
-                                        <input type="number" id="age" name="age"  autocomplete="off" class="form-control form-control-lg rounded-0 border-0 border-bottom" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="sex" class="control-label text-info">Select Sex</label>
-                                        <select name="sex" id="sex" class="form-select rounded-0 border-0 border-bottom" required>
-                                            <option value="Male">Male</option>
-                                            <option value="Female">Female</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="phone_number" class="control-label text-info">Enter Phone Number</label>
-                                        <input type="text" id="phone_number" name="phone_number" autocomplete="off" class="form-control form-control-lg rounded-0 border-0 border-bottom" required>
-                                    </div>
-                                    <div class="form-group text-center my-2">
-                                        <button class="btn-primary btn-lg btn col-sm-4 rounded-0" type='submit'>Get Queue</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-
+        <div class="card">
+            <div class="card-body">
+                <div class="h5 card-title">Get your Queue Number Here</div>
+                <form action="" id="queue-form">
+                    <div class="form-group mb-3">
+                        <label for="customer_name" class="control-label text-info2">Enter your Name</label>
+                        <input type="text" id="customer_name" name="customer_name" autofocus autocomplete="off" class="form-control form-control-lg rounded-0 border-0 border-bottom" required>
                     </div>
-                </div>
-
+                    <div class="form-group mb-3">
+                        <label for="age" class="control-label text-info2">Enter your Age</label>
+                        <input type="number" id="age" name="age"  autocomplete="off" class="form-control form-control-lg rounded-0 border-0 border-bottom" required>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="sex" class="control-label text-info2">Select Sex</label>
+                        <select name="sex" id="sex" class="form-select rounded-0 border-0 border-bottom" required>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                        </select>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="phone_number" class="control-label text-info2">Enter Phone Number</label>
+                        <input type="text" id="phone_number" name="phone_number" autocomplete="off" class="form-control form-control-lg rounded-0 border-0 border-bottom" required>
+                    </div>
+                    <div class="form-group text-center my-2">
+                        <button class="btn-primary btn-lg btn col-sm-4 rounded-0" type='submit'>Get Queue</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
-    </main>
+
     <div class="modal fade" id="uni_modal" role='dialog' data-bs-backdrop="static" data-bs-keyboard="true">
         <div class="modal-dialog modal-md modal-dialog-centered" role="document">
-        <div class="modal-content">
-            <div class="modal-header py-2">
-            <h5 class="modal-title"></h5>
-        </div>
-        <div class="modal-body">
-        </div>
-        <div class="modal-footer py-1">
-            <button type="button" class="btn btn-sm rounded-0 btn-primary" id='submit' onclick="$('#uni_modal form').submit()">Save</button>
-            <button type="button" class="btn btn-sm rounded-0 btn-secondary" data-bs-dismiss="modal">Close</button>
-        </div>
-        </div>
-        </div>
-    </div>
-    <div class="modal fade" id="uni_modal_secondary" role='dialog' data-bs-backdrop="static" data-bs-keyboard="true">
-        <div class="modal-dialog modal-md modal-dialog-centered" role="document">
-        <div class="modal-content">
-            <div class="modal-header py-2">
-            <h5 class="modal-title"></h5>
-        </div>
-        <div class="modal-body">
-        </div>
-        <div class="modal-footer py-1">
-            <button type="button" class="btn btn-sm rounded-0 btn-primary" id='submit' onclick="$('#uni_modal_secondary form').submit()">Save</button>
-            <button type="button" class="btn btn-sm rounded-0 btn-secondary" data-bs-dismiss="modal">Close</button>
-        </div>
-        </div>
+            <div class="modal-content">
+                <div class="modal-header py-2">
+                    <h5 class="modal-title"></h5>
+                </div>
+                <div class="modal-body"></div>
+                <div class="modal-footer py-1">
+                    <button type="button" class="btn btn-sm rounded-0 btn-primary" id='submit' onclick="$('#uni_modal form').submit()">Save</button>
+                    <button type="button" class="btn btn-sm rounded-0 btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
         </div>
     </div>
     <div class="modal fade" id="confirm_modal" role='dialog'>
         <div class="modal-dialog modal-md modal-dialog-centered" role="document">
-        <div class="modal-content rounded-0">
-            <div class="modal-header py-2">
-            <h5 class="modal-title">Confirmation</h5>
-        </div>
-        <div class="modal-body">
-            <div id="delete_content"></div>
-        </div>
-        <div class="modal-footer py-1">
-            <button type="button" class="btn btn-primary btn-sm rounded-0" id='confirm' onclick="">Continue</button>
-            <button type="button" class="btn btn-secondary btn-sm rounded-0" data-bs-dismiss="modal">Close</button>
-        </div>
-        </div>
+            <div class="modal-content rounded-0">
+                <div class="modal-header py-2">
+                    <h5 class="modal-title">Confirmation</h5>
+                </div>
+                <div class="modal-body">
+                    <div id="delete_content"></div>
+                </div>
+                <div class="modal-footer py-1">
+                    <button type="button" class="btn btn-primary btn-sm rounded-0" id='confirm' onclick="">Continue</button>
+                    <button type="button" class="btn btn-secondary btn-sm rounded-0" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
         </div>
     </div>
     <script>

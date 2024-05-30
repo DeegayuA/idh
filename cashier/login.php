@@ -16,29 +16,146 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
     <title>LOGIN | IDH Queuing System - Doctor Side</title>
     <link rel="stylesheet" href="./../css/bootstrap.min.css">
     <link rel="stylesheet" href="./../select2/css/select2.min.css">
-    <script src="./../js/jquery-3.6.0.min.js"></script>
-    <script src="./../js/popper.min.js"></script>
-    <script src="./../js/bootstrap.min.js"></script>
-    <script src="./../select2/js/select2.min.js"></script>
-    <script src="./../js/script.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        html, body{
-            height:100%;
+       :root {
+            --background-color: #f8f9fa;
+            --text-color: #000000;
+            --card-background: #fff;
+            --primary-color: #4b79a1;
+            --primary-hover: #283e51;
+            --border-radius: 10px;
+            --box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            --font-family: 'Montserrat', sans-serif;
         }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --background-color: #121212;
+                --text-color: #ffffff;
+                --card-background: #272727;
+                --primary-color: #4b79a1;
+                --primary-hover: #66a3d9;
+            }
+        }
+        html, body {
+            height: 100%;
+            background: var(--background-color);
+            color: var(--text-color);
+            font-family: var(--font-family);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 400px;
+            width: 100%;
+            padding: 20px;
+            box-shadow: var(--box-shadow);
+            border-radius: var(--border-radius);
+            background: var(--card-background);
+        }
+
+        .header-text {
+            font-weight: 600;
+            font-size: 1.5rem;
+            text-align: center;
+            margin-bottom: 1rem;
+            color: var(--text-color);
+        }
+
+        .sub-header-text {
+            font-size: 1.2rem;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 1rem;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            border-radius: var(--border-radius);
+            width: 100%;
+            padding: 10px;
+            font-size: 1rem;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+            border-color: var(--primary-hover);
+        }
+
+        .login-footer-links {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .login-footer-links a {
+            color: var(--primary-color);
+            font-weight: bold;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .login-footer-links a:hover {
+            color: var(--primary-hover);
+        }
+        .card-body{
+            background-color: var(--card-background);
+        }
+        .select2-dropdown,
+        .select2-search {
+            background-color: var(--card-background);
+        }
+        .card{
+            background-color: var(--card-background);
+            border: none;
+        }
+
+        .pop_msg {
+            display: none;
+            margin-top: 10px;
+            text-align: center;
+        }
+        
+        .footer-logos {
+            text-align: center;
+            margin-top: 2rem;
+        }
+
+        .footer-logos img {
+            height: 50px;
+            width: auto;
+            margin: 10px;
+        }
+        .brakeline{
+            color: var(--primary-color);
+        }
+
     </style>
 </head>
-<body class="bg-dark bg-gradient">
-   <div class="h-100 d-flex jsutify-content-center align-items-center">
-       <div class='w-100'>
-        <h3 class="py-5 text-center text-light">IDH Queuing System - Doctor Side</h3>
-        <div class="card my-3 col-md-4 offset-md-4">
+<body>
+   <div class="container">
+        <h1 class="header-text">National Institute of Infectious Diseases, Sri Lanka</h1>
+        <h2 class="sub-header-text">Doctor Login - Patient Queuing System</h2>
+        <div class="card">
             <div class="card-body">
                 <form action="" id="login-form">
-                    <center><small>Please Select Doctor Name to Operate.</small></center>
                     <div class="form-group">
                         <label for="cashier_id" class="control-label">Doctor</label>
-                        <select name="cashier_id" id="cashier_id" data-placeholder="Please Select Doctor to Operate" class="custom-select2 select2">
-                            <option disabled selected></option>
+                        <select name="cashier_id" id="cashier_id" class="custom-select select2">
+                            <option disabled selected>Select Doctor</option>
                             <?php 
                             $cashier = $conn->query("SELECT * FROM `cashier_list` where `status` = 1 order by `name` asc");
                             while($row = $cashier->fetchArray()):
@@ -47,57 +164,64 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
                             <?php endwhile; ?>
                         </select>
                     </div>
-                    <div class="form-group d-flex w-100 justify-content-between align-items-center">
-                        <a href="./../">Admin</a>
-                        <button class="btn btn-sm btn-primary rounded-0 my-1">Login</button>
+                    <div class="form-group">
+                        <button class="btn btn-primary">Login</button>
                     </div>
+                    <div class="login-footer-links">
+                        <a href="./../queue_registration.php">Home</a>
+                        <span class="brakeline"> | </span>
+                        <a href="./../">Admin</a>
+                    </div>
+                    <div class="pop_msg"></div>
                 </form>
             </div>
         </div>
-       </div>
+        <div class="footer-logos">
+                    <span>Powered by EDIC UOK</span>
+                    <div class="logos">
+                        <img src=".././logos/EDICWebLogo.png" alt="EDIC Web Logo">
+                        <img src=".././logos/university-of-kelaniya-logo.png" alt="University of Kelaniya Logo">
+                    </div>
+                </div>
    </div>
 </body>
+<script src="./../js/jquery-3.6.0.min.js"></script>
+<script src="./../js/popper.min.js"></script>
+<script src="./../js/bootstrap.min.js"></script>
+<script src="./../select2/js/select2.min.js"></script>
 <script>
     $(function(){
-        $('.select2').select2({width:'100%'})
+        $('.select2').select2();
         $('#login-form').submit(function(e){
             e.preventDefault();
-            $('.pop_msg').remove()
-            var _this = $(this)
-            var _el = $('<div>')
-                _el.addClass('pop_msg')
-            _this.find('button').attr('disabled',true)
-            _this.find('button[type="submit"]').text('Loging in...')
+            $('.pop_msg').hide().empty();
+            var _this = $(this);
+            var _el = $('<div>').addClass('pop_msg');
+            _this.find('button').prop('disabled', true).text('Logging in...');
             $.ajax({
-                url:'./../Actions.php?a=c_login',
-                method:'POST',
-                data:$(this).serialize(),
-                dataType:'JSON',
-                error:err=>{
-                    console.log(err)
-                    _el.addClass('alert alert-danger')
-                    _el.text("An error occurred.")
-                    _this.prepend(_el)
-                    _el.show('slow')
-                    _this.find('button').attr('disabled',false)
-                    _this.find('button[type="submit"]').text('Save')
+                url: './../Actions.php?a=c_login',
+                method: 'POST',
+                data: _this.serialize(),
+                dataType: 'JSON',
+                error: function(xhr, status, error) {
+                    var errMsg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'An error occurred.';
+                    _el.addClass('alert alert-danger').text(errMsg);
+                    _this.prepend(_el);
+                    _el.slideDown();
+                    _this.find('button').prop('disabled', false).text('Login');
                 },
-                success:function(resp){
+                success: function(resp) {
                     if(resp.status == 'success'){
-                            location.replace('./');
-                    }else{
-                        _el.addClass('alert alert-danger')
+                        location.replace('./');
+                    } else {
+                        _el.addClass('alert alert-danger').text(resp.msg);
                     }
-                    _el.text(resp.msg)
-
-                    _el.hide()
-                    _this.prepend(_el)
-                    _el.show('slow')
-                    _this.find('button').attr('disabled',false)
-                    _this.find('button[type="submit"]').text('Save')
+                    _this.prepend(_el);
+                    _el.slideDown();
+                    _this.find('button').prop('disabled', false).text('Login');
                 }
-            })
-        })
-    })
+            });
+        });
+    });
 </script>
 </html>

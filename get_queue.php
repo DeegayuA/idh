@@ -37,23 +37,102 @@ if (isset($_GET['id'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Patient Queue Token</title>
+    <link rel="stylesheet" href="./Font-Awesome-master/css/all.min.css">
+    <link rel="stylesheet" href="./css/bootstrap.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
+    <script src="./js/jquery-3.6.0.min.js"></script>
+    <script src="./js/popper.min.js"></script>
+    <script src="./js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="./DataTables/datatables.min.css">
+    <script src="./DataTables/datatables.min.js"></script>
+    <script src="./Font-Awesome-master/js/all.min.js"></script>
     <style>
+        :root {
+            --background-color: #ffffff;
+            --text-color: #000000;
+            --card-background: #f8f9fa;
+            --primary-color: #4b79a1;
+            --primary-hover: #283e51;
+            --border-radius: 10px;
+            --box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            --font-family: 'Montserrat', sans-serif;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --background-color: #121212;
+                --text-color: #ffffff;
+                --card-background: #272727;
+                --primary-color: #4b79a1;
+                --primary-hover: #66a3d9;
+            }
+        }
+
+        html,
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #ffffff;
-            color: #000;
+            height: 100%;
+            width: 100%;
+            background: var(--background-color);
+            color: var(--text-color);
+            font-family: var(--font-family);
             margin: 0;
             padding: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header,
+        .modal-body,
+        .modal-footer {
+            background-color: var(--background-color);
         }
 
         .container2 {
-            max-width: 600px;
-            margin: 40px auto;
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .card {
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            background: var(--card-background);
             padding: 20px;
-            border: 2px solid #000;
-            border-radius: 10px;
-            background-color: #fff;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            border-radius: var(--border-radius);
+            width: 100%;
+            padding: 10px;
+            font-size: 1rem;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+            border-color: var(--primary-hover);
+        }
+
+        .text-info2 {
+            color: var(--primary-hover);
+        }
+
+        .form-control,
+        .form-select {
+            border-radius: var(--border-radius);
+            border: none;
+            border-bottom: 2px solid var(--primary-color);
+            transition: border-color 0.2s;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            border-color: var(--primary-hover);
+            box-shadow: none;
         }
 
         .text-center {
@@ -76,13 +155,13 @@ if (isset($_GET['id'])) {
 
         .history-table th,
         .history-table td {
-            border: 1px solid #000;
+            border: 1px solid var(--text-color);
             padding: 10px;
             text-align: left;
         }
 
         .history-table th {
-            background-color: #f2f2f2;
+            background-color: var(--primary-color);
         }
 
         .bill-header {
@@ -91,7 +170,7 @@ if (isset($_GET['id'])) {
 
         .bill-footer {
             margin-top: 20px;
-            border-top: 1px solid #000;
+            border-top: 1px solid var(--text-color);
             padding-top: 10px;
             font-size: 0.9rem;
         }
@@ -129,9 +208,21 @@ if (isset($_GET['id'])) {
             background-color: #23272b;
         }
 
+        .primaryColor {
+            color: var(--primary-color);
+        }
+        .btn.btn-sm.rounded-0.btn-primary {
+    display: none;
+}
+
         @media print {
-            body {
-                background-color: #fff;
+            body * {
+                visibility: hidden;
+            }
+
+            .card2,
+            .card2 * {
+                visibility: visible;
             }
 
             .container2 {
@@ -139,6 +230,23 @@ if (isset($_GET['id'])) {
                 box-shadow: none;
                 margin: 0;
                 padding: 20px;
+                width: 80mm;
+                margin: 0;
+                padding: 0;
+            }
+
+            body {
+                margin: 0;
+                padding: 0;
+            }
+
+            .card2 {
+                position: relative;
+                border: 2px solid #000;
+                box-shadow: none;
+                margin: 0;
+                padding: 0;
+                max-width: 100%;
             }
 
             .text-center {
@@ -159,65 +267,70 @@ if (isset($_GET['id'])) {
                 margin: 0;
                 padding: 0;
             }
+
+
         }
     </style>
 </head>
 
 <body>
     <div class="container2">
-        <div class="text-center bill-header">
-            <h2>National Institute of Infectious Diseases</h2>
-            <h4>ජාතික බෝවන රෝග විද්‍යායතනය</h4>
-            <p><strong>Patient Queue Token</strong></p>
-        </div>
-        <div class="fs-1 fw-bold text-center text-info"><?php echo $queue ?></div>
-        <center>
-            <p><strong>Name / නම:</strong> <?php echo $customer_name ?></p>
-            <div class="age-phone">
-                <p><strong>Age / වයස:</strong> <?php echo $age ?></p>
-                <p><strong>Phone Number / දුරකථන අංකය:</strong> <?php echo $phone_number ?></p>
+        <div class="card2">
+            <div class="text-center bill-header">
+                <h2>National Institute of Infectious Diseases</h2>
+                <h4>ජාතික බෝවන රෝග විද්‍යායතනය</h4>
+                <p><strong>Patient Queue Token</strong></p>
             </div>
-            <p><strong>Sex / ස්ත්‍රී/පුරුෂ භාවය:</strong> <?php echo $sex ?></p>
+            <div class="fs-1 fw-bold text-center text-info"><?php echo $queue ?></div>
+            <center>
+                <p><strong>Name / නම:</strong> <?php echo $customer_name ?></p>
+                <div class="age-phone">
+                    <p><strong>Age / වයස:</strong> <?php echo $age ?></p>
+                    <p><strong>Phone Number / දුරකථන අංකය:</strong> <?php echo $phone_number ?></p>
+                </div>
+                <p><strong>Sex / ස්ත්‍රී/පුරුෂ භාවය:</strong> <?php echo $sex ?></p>
 
-            <?php if (count($patientHistory) > 1) : ?>
-                <h5 class="text-center">Visit History / ඉතිහාසය</h5>
-                <table class="history-table">
-                    <thead>
-                        <tr>
-                            
-                            <th>Date / දිනය</th>
-                            <th>Queue Number / පෝලිමේ අංකය</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($patientHistory as $visit) : ?>
+                <?php if (count($patientHistory) > 1) : ?>
+                    <br><br>
+                    <h5 class="text-center primaryColor">Visit History / ඉතිහාසය</h5>
+                    <table class="history-table">
+                        <thead>
                             <tr>
-                                
-                                <td><?php
-                                    $date = new DateTime($visit['date_created'], new DateTimeZone('UTC'));
-                                    $date->setTimezone(new DateTimeZone('Asia/Colombo'));
-                                    echo $date->format('Y-m-d H:i:s');
-                                    ?></td>
-                                    <td><?php echo $visit['queue']; ?></td>
+                                <th>Date / දිනය</th>
+                                <th>Queue Number / පෝලිමේ අංකය</th>
                             </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            <?php endif; ?>
-        </center>
-        <div class="bill-footer text-center">
-            <?php if ($estimatedTime) : ?>
-                <p><b>Estimated Time: <?php echo $estimatedTime; ?></b></p>
-            <?php endif; ?>
-            <p>Thank you for your patience / ඔබේ ඉවසීමට ස්තුතියි</p>
-            <p id="generated-time">Generated on: <?php echo date("Y-m-d H:i:s"); ?></p>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($patientHistory as $visit) : ?>
+                                <tr>
+                                    <td><?php
+                                        $date = new DateTime($visit['date_created'], new DateTimeZone('UTC'));
+                                        $date->setTimezone(new DateTimeZone('Asia/Colombo'));
+                                        echo $date->format('Y-m-d H:i:s');
+                                        ?></td>
+                                    <td><?php echo $visit['queue']; ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                <?php endif; ?>
+            </center>
+            <div class="bill-footer text-center">
+                <?php if ($estimatedTime) : ?>
+                    <p class="primaryColor"><b>Estimated Time: <?php echo $estimatedTime; ?></b></p>
+                <?php endif; ?>
+                <p>Thank you for your patience / ඔබේ ඉවසීමට ස්තුතියි</p>
+                <p id="generated-time">Generated on: <?php echo date("Y-m-d H:i:s"); ?></p>
 
+            </div>
+            <div class="btn-container">
+                <button class="btn btn-success" onclick="window.print()">Print</button>
+                <a href="index.php" class="btn btn-dark">Back</a>
+            </div>
         </div>
     </div>
-    <div class="btn-container">
-        <button class="btn btn-success" id="print" type="button"><i class="fa fa-print"></i> Print</button>
-        <button class="btn btn-dark" data-bs-dismiss="modal" type="button"><i class="fa fa-times"></i> Close</button>
-    </div>
+
+
     <script>
         $(function() {
             $('#print').click(function() {
