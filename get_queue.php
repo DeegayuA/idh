@@ -184,19 +184,21 @@ if (isset($_GET['id'])) {
                 <table class="history-table">
                     <thead>
                         <tr>
-                            <th>Queue Number / පෝලිමේ අංකය</th>
+                            
                             <th>Date / දිනය</th>
+                            <th>Queue Number / පෝලිමේ අංකය</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($patientHistory as $visit) : ?>
                             <tr>
-                                <td><?php echo $visit['queue']; ?></td>
+                                
                                 <td><?php
                                     $date = new DateTime($visit['date_created'], new DateTimeZone('UTC'));
                                     $date->setTimezone(new DateTimeZone('Asia/Colombo'));
                                     echo $date->format('Y-m-d H:i:s');
                                     ?></td>
+                                    <td><?php echo $visit['queue']; ?></td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>
