@@ -105,9 +105,7 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
             margin-top: 1rem;
             gap: 1rem;
         }
-        .brakeline{
-            color: var(--primary-color);
-        }
+
         .login-footer-links a {
             color: var(--primary-color);
             font-weight: bolder;
@@ -124,6 +122,9 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
             margin-top: 2rem;
         }
 
+        .brakeline{
+            color: var(--primary-color);
+        }
         .footer-logos img {
             height: 50px;
             width: auto;
@@ -140,7 +141,7 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
 <body>
     <div class="container">
         <h1 class="header-text">National Institute of Infectious Diseases <br> Sri Lanka</h1>
-        <h2 class="sub-header-text">Patient Queuing System</h2>
+        <h2 class="sub-header-text">Admin login - Patient Queuing System</h2>
         <div class="card2 my-3">
             <div class="card-body">
                 <form action="javascript:void(0)" id="login-form">

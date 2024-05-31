@@ -127,13 +127,26 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
         .alert {
             border-radius: var(--border-radius);
         }
+        .footer-logos {
+            text-align: center;
+            margin-top: 2rem;
+        }
+
+        .brakeline{
+            color: var(--primary-color);
+        }
+        .footer-logos img {
+            height: 50px;
+            width: auto;
+            margin: 10px;
+        }
     </style>
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary bg-gradient" id="topNavBar">
         <div class="container">
             <a class="navbar-brand" href="./">
-                Queuing - Patient Registration
+            National Institute of Infectious Diseases, Sri Lanka | Patient Registration
             </a>
         </div>
     </nav>
@@ -151,6 +164,10 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
             <div class="card-body">
                 <div class="h5 card-title">Get your Queue Number Here</div>
                 <form action="" id="queue-form">
+                <div class="form-group mb-3">
+                        <label for="phone_number" class="control-label text-info2">Enter Phone Number</label>
+                        <input type="text" id="phone_number" name="phone_number" autocomplete="off" class="form-control form-control-lg rounded-0 border-0 border-bottom" required>
+                    </div>
                     <div class="form-group mb-3">
                         <label for="customer_name" class="control-label text-info2">Enter your Name</label>
                         <input type="text" id="customer_name" name="customer_name" autofocus autocomplete="off" class="form-control form-control-lg rounded-0 border-0 border-bottom" required>
@@ -166,13 +183,17 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
                             <option value="Female">Female</option>
                         </select>
                     </div>
-                    <div class="form-group mb-3">
-                        <label for="phone_number" class="control-label text-info2">Enter Phone Number</label>
-                        <input type="text" id="phone_number" name="phone_number" autocomplete="off" class="form-control form-control-lg rounded-0 border-0 border-bottom" required>
-                    </div>
+
                     <div class="form-group text-center my-2">
                         <button class="btn-primary btn-lg btn col-sm-4 rounded-0" type='submit'>Get Queue</button>
                     </div>
+                    <div class="footer-logos">
+                    <span>Powered by EDIC UOK</span>
+                    <div class="logos">
+                        <img src="./logos/EDICWebLogo.png" alt="EDIC Web Logo">
+                        <img src="./logos/university-of-kelaniya-logo.png" alt="University of Kelaniya Logo">
+                    </div>
+                </div>
                 </form>
             </div>
         </div>

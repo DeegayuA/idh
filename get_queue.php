@@ -177,8 +177,9 @@ if (isset($_GET['id'])) {
 
         .btn-container {
             display: flex;
-            justify-content: space-around;
+            justify-content: center;
             margin-top: 20px;
+            gap: 2rem;
         }
 
         .btn {
@@ -188,6 +189,7 @@ if (isset($_GET['id'])) {
             border: none;
             border-radius: 5px;
             transition: background-color 0.3s ease;
+       
         }
 
         .btn-success {
@@ -291,7 +293,7 @@ if (isset($_GET['id'])) {
                 <p><strong>Sex / ස්ත්‍රී/පුරුෂ භාවය:</strong> <?php echo $sex ?></p>
 
                 <?php if (count($patientHistory) > 1) : ?>
-                    <br><br>
+                    <br>
                     <h5 class="text-center primaryColor">Visit History / ඉතිහාසය</h5>
                     <table class="history-table">
                         <thead>
@@ -325,7 +327,7 @@ if (isset($_GET['id'])) {
             </div>
             <div class="btn-container">
                 <button class="btn btn-success" onclick="window.print()">Print</button>
-                <a href="index.php" class="btn btn-dark">Back</a>
+                <a href="index.php" class="btn btn-dark">Home</a>
             </div>
         </div>
     </div>
