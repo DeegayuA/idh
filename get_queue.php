@@ -18,10 +18,10 @@ if (isset($_GET['id'])) {
         }
 
         // Get Patient History
-        $patientHistory = $conn->getPatientHistory($phone_number);
+        $patientHistory = $conn->getPatientHistory($phone_number, 5); // Limit to 5 entries
 
         // Calculate Estimated Waiting Time
-        $qry = $conn->query("SELECT COUNT(*) as count FROM `queue_list` WHERE `status` = 0 AND strftime('%Y-%m-%d', `date_created`) = strftime('%Y-%m-%d', 'now')");
+        $qry = $conn->query("SELECT COUNT(*) as count FROM `queue_list` WHERE `status` = 0 AND strftime('%Y-%m-%d', `date_created`) = strftime('%Y-%m-%d', 'now') LIMIT 5");
         $row = $qry->fetchArray();
         $queuedPatients = $row['count']; // Number of patients in the queue with status = 0
         $estimatedWaitSeconds = $queuedPatients * 5 * 60; // Each patient takes approximately 5 minutes, converted to seconds

@@ -1,6 +1,6 @@
 <?php
 if (!is_dir(__DIR__ . '/db')) {
-    mkdir(__DIR__ . '/db', 0777, true); 
+    mkdir(__DIR__ . '/db', 0777, true);
 }
 
 if (!defined('db_file')) {
@@ -10,21 +10,29 @@ if (!defined('db_file')) {
 if (!defined('tZone')) define('tZone', "Asia/Colombo");
 if (!defined('dZone')) define('dZone', ini_get('date.timezone'));
 
-function my_udf_md5($string) {
+function my_udf_md5($string)
+{
     return md5($string);
 }
 
-class DBConnection extends SQLite3 {
+class DBConnection extends SQLite3
+{
     protected $db;
 
-    function __construct() {
+    function __construct()
+    {
+        // Check if database file exists, if not, create it
+        if (!file_exists(db_file)) {
+            touch(db_file); // Create an empty file
+        }
+
         $this->open(db_file);
         $this->createFunction('md5', 'my_udf_md5');
         $this->exec("PRAGMA foreign_keys = ON;");
 
         $this->exec("CREATE TABLE IF NOT EXISTS `user_list` (
             `user_id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-            `fullname` INTEGER NOT NULL,
+            `fullname` TEXT NOT NULL,
             `username` TEXT NOT NULL,
             `password` TEXT NOT NULL,
             `status` INTEGER NOT NULL Default 1,
@@ -52,7 +60,8 @@ class DBConnection extends SQLite3 {
         $this->exec("INSERT or IGNORE INTO `user_list` VALUES (1,'Administrator','admin',md5('admin123'),1, CURRENT_TIMESTAMP)");
     }
 
-    function addColumnIfNotExists($table, $column, $type) {
+    function addColumnIfNotExists($table, $column, $type)
+    {
         $result = $this->query("PRAGMA table_info($table)");
         $exists = false;
         while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
@@ -66,25 +75,37 @@ class DBConnection extends SQLite3 {
         }
     }
 
-    function getPatientHistory($phoneNumber) {
-        $sql = "SELECT * FROM `queue_list` WHERE `phone_number` = '$phoneNumber' ORDER BY `date_created` DESC";
-        $result = $this->query($sql);
-
-        $history = [];
-        while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
-            $history[] = $row;
+    public function getPatientHistory($phone_number, $limit = null) {
+        $qry = "SELECT * FROM `queue_list` WHERE `phone_number` = '$phone_number' ORDER BY `date_created` DESC";
+        if ($limit) {
+            $qry .= " LIMIT $limit";
         }
-        return $history;
+        $result = $this->query($qry);
+        $rows = [];
+        while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+            $rows[] = $row;
+        }
+        return $rows;
     }
+    
 
-    function generateQueueNumber() {
+    function generateQueueNumber()
+    {
         $date = date("Ymd");
         $time = date("His");
         $unique = substr(uniqid(), -5); // Get the last 5 characters for uniqueness
         return $date . $time . $unique;
     }
+    
+    function getPatientDetails($queue_id)
+    {
+        $sql = "SELECT customer_name, age, sex FROM `queue_list` WHERE `queue_id` = '$queue_id'";
+        $result = $this->querySingle($sql, true);
+        return $result;
+    }
 
-    function __destruct() {
+    function __destruct()
+    {
         $this->close();
     }
 }

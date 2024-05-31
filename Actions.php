@@ -268,19 +268,20 @@ Class Actions extends DBConnection{
         }
         return json_encode($resp);
     }
-    function next_queue(){
+    function next_queue() {
         extract($_POST);
-        $get = $this->query("SELECT queue_id,`queue`,customer_name FROM `queue_list` where status = 0 and date(date_created) = '".date("Y-m-d")."' order by queue_id asc  limit 1");
+        $get = $this->query("SELECT queue_id, queue, customer_name, age, sex FROM queue_list WHERE status = 0 AND date(date_created) = '" . date("Y-m-d") . "' ORDER BY queue_id ASC LIMIT 1");
         @$res = $get->fetchArray();
-        $resp['status']='success';
-        if($res){
-            $this->query("UPDATE `queue_list` set status = 1 where queue_id = '{$res['queue_id']}'");
-            $resp['data']=$res;
-        }else{
-            $resp['data']=$res;
+        $resp['status'] = 'success';
+        if ($res) {
+            $this->query("UPDATE queue_list SET status = 1 WHERE queue_id = '{$res['queue_id']}'");
+            $resp['data'] = $res;
+        } else {
+            $resp['data'] = $res;
         }
         return json_encode($resp);
     }
+    
     function update_video(){
         extract($_FILES);
         
