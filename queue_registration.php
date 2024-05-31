@@ -5,11 +5,12 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo ucwords(str_replace('_',' ',$page)) ?> | IDH Queuing System</title>
+    <title><?php echo ucwords(str_replace('_', ' ', $page)) ?> | IDH Queuing System</title>
     <link rel="stylesheet" href="./Font-Awesome-master/css/all.min.css">
     <link rel="stylesheet" href="./css/bootstrap.min.css">
     <link rel="stylesheet" href="./select2/css/select2.min.css">
@@ -44,7 +45,8 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
             }
         }
 
-        html, body {
+        html,
+        body {
             height: 100%;
             width: 100%;
             background: var(--background-color);
@@ -102,7 +104,8 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
             border-color: var(--primary-hover);
             box-shadow: none;
         }
-        .text-info2{
+
+        .text-info2 {
             color: var(--primary-hover);
         }
 
@@ -127,14 +130,16 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
         .alert {
             border-radius: var(--border-radius);
         }
+
         .footer-logos {
             text-align: center;
             margin-top: 2rem;
         }
 
-        .brakeline{
+        .brakeline {
             color: var(--primary-color);
         }
+
         .footer-logos img {
             height: 50px;
             width: auto;
@@ -142,29 +147,30 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
         }
     </style>
 </head>
+
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary bg-gradient" id="topNavBar">
         <div class="container">
             <a class="navbar-brand" href="./">
-            National Institute of Infectious Diseases, Sri Lanka | Patient Registration
+                National Institute of Infectious Diseases, Sri Lanka | Patient Registration
             </a>
         </div>
     </nav>
     <div class="container">
-        <?php 
-            if(isset($_SESSION['flashdata'])):
+        <?php
+        if (isset($_SESSION['flashdata'])) :
         ?>
-        <div class="dynamic_alert alert alert-<?php echo $_SESSION['flashdata']['type'] ?>">
-            <div class="float-end"><a href="javascript:void(0)" class="text-dark text-decoration-none" onclick="$(this).closest('.dynamic_alert').hide('slow').remove()">x</a></div>
-            <?php echo $_SESSION['flashdata']['msg'] ?>
-        </div>
-        <?php unset($_SESSION['flashdata']) ?>
+            <div class="dynamic_alert alert alert-<?php echo $_SESSION['flashdata']['type'] ?>">
+                <div class="float-end"><a href="javascript:void(0)" class="text-dark text-decoration-none" onclick="$(this).closest('.dynamic_alert').hide('slow').remove()">x</a></div>
+                <?php echo $_SESSION['flashdata']['msg'] ?>
+            </div>
+            <?php unset($_SESSION['flashdata']) ?>
         <?php endif; ?>
         <div class="card">
             <div class="card-body">
                 <div class="h5 card-title">Get your Queue Number Here</div>
                 <form action="" id="queue-form">
-                <div class="form-group mb-3">
+                    <div class="form-group mb-3">
                         <label for="phone_number" class="control-label text-info2">Enter Phone Number</label>
                         <input type="text" id="phone_number" name="phone_number" autocomplete="off" class="form-control form-control-lg rounded-0 border-0 border-bottom" required>
                     </div>
@@ -174,7 +180,7 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
                     </div>
                     <div class="form-group mb-3">
                         <label for="age" class="control-label text-info2">Enter your Age</label>
-                        <input type="number" id="age" name="age"  autocomplete="off" class="form-control form-control-lg rounded-0 border-0 border-bottom" required>
+                        <input type="number" id="age" name="age" autocomplete="off" class="form-control form-control-lg rounded-0 border-0 border-bottom" required>
                     </div>
                     <div class="form-group mb-3">
                         <label for="sex" class="control-label text-info2">Select Sex</label>
@@ -188,12 +194,12 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
                         <button class="btn-primary btn-lg btn col-sm-4 rounded-0" type='submit'>Get Queue</button>
                     </div>
                     <div class="footer-logos">
-                    <span>Powered by EDIC UOK</span>
-                    <div class="logos">
-                        <img src="./logos/EDICWebLogo.png" alt="EDIC Web Logo">
-                        <img src="./logos/university-of-kelaniya-logo.png" alt="University of Kelaniya Logo">
+                        <span>Powered by EDIC UOK</span>
+                        <div class="logos">
+                            <img src="./logos/EDICWebLogo.png" alt="EDIC Web Logo">
+                            <img src="./logos/university-of-kelaniya-logo.png" alt="University of Kelaniya Logo">
+                        </div>
                     </div>
-                </div>
                 </form>
             </div>
         </div>
@@ -230,50 +236,79 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
         </div>
     </div>
     <script>
-        $(function(){
-            $('#queue-form').submit(function(e){
+        $(function() {
+            $('#phone_number').on('blur', function() {
+                var phoneNumber = $(this).val();
+                console.log('Phone number entered: ' + phoneNumber);
+                if (phoneNumber) {
+                    $.ajax({
+                        url: 'fetch_patient_data.php',
+                        method: 'POST',
+                        data: {
+                            phone_number: phoneNumber
+                        },
+                        dataType: 'json',
+                        success: function(response) {
+                            // console.log('Response from fetch_patient_data.php:', response);
+                            if (response.status === 'success') {
+                                $('#customer_name').val(response.data.customer_name);
+                                $('#age').val(response.data.age);
+                                $('#sex').val(response.data.sex);
+                            }
+                        },
+                        error: function() {
+                            console.log('Error fetching patient data.');
+                        }
+                    });
+                }
+            });
+
+            $('#queue-form').submit(function(e) {
                 e.preventDefault()
                 var _this = $(this)
                 _this.find('.pop-msg').remove()
                 var el = $('<div>')
-                    el.addClass('alert pop-msg')
-                    el.hide()
-                    _this.find('button[type="submit"]').attr('disabled',true)
-                    $.ajax({
-                        url:'./Actions.php?a=save_queue',
-                        method:'POST',
-                        data:_this.serialize(),
-                        dataType:'JSON',
-                        error:err=>{
-                            console.log(err)
-                            el.addClass("alert-danger")
-                            el.text("An error occured while saving data.")
-                            _this.find('button[type="submit"]').attr('disabled',false)
+                el.addClass('alert pop-msg')
+                el.hide()
+                _this.find('button[type="submit"]').attr('disabled', true)
+                console.log('Form data:', _this.serialize());
+                $.ajax({
+                    url: './Actions.php?a=save_queue',
+                    method: 'POST',
+                    data: _this.serialize(),
+                    dataType: 'JSON',
+                    error: err => {
+                        console.log('Error saving data:', err)
+                        el.addClass("alert-danger")
+                        el.text("An error occurred while saving data.")
+                        _this.find('button[type="submit"]').attr('disabled', false)
+                        _this.prepend(el)
+                        el.show('slow')
+                    },
+                    success: function(resp) {
+                        // console.log('Response from save_queue:', resp);
+                        if (resp.status == 'success') {
+                            uni_modal("Your Queue", "get_queue.php?success=true&id=" + resp.id)
+                            $('#uni_modal').on('hide.bs.modal', function(e) {
+                                location.reload()
+                            })
+                        } else if (resp.status == 'failed' && !!resp.msg) {
+                            el.addClass('alert-' + resp.status)
+                            el.text(resp.msg)
                             _this.prepend(el)
                             el.show('slow')
-                        },
-                        success:function(resp){
-                            if(resp.status == 'success'){
-                                uni_modal("Your Queue","get_queue.php?success=true&id="+resp.id)
-                                $('#uni_modal').on('hide.bs.modal',function(e){
-                                    location.reload()
-                                })
-                            }else if(resp.status ='failed' && !!resp.msg){
-                                el.addClass('alert-'+resp.status)
-                                el.text(resp.msg)
-                                _this.prepend(el)
-                                el.show('slow')
-                            }else{
-                                el.addClass('alert-'+resp.status)
-                                el.text("An Error occured.")
-                                _this.prepend(el)
-                                el.show('slow')
-                            }
-                            _this.find('button[type="submit"]').attr('disabled',false)
+                        } else {
+                            el.addClass('alert-' + resp.status)
+                            el.text("An Error occurred.")
+                            _this.prepend(el)
+                            el.show('slow')
                         }
-                    })
+                        _this.find('button[type="submit"]').attr('disabled', false)
+                    }
+                })
             })
         })
     </script>
 </body>
+
 </html>
