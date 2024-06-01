@@ -10,19 +10,21 @@ if(isset($_POST['phone_number'])) {
     // Sanitize the phone number input
     $phone_number = filter_var($_POST['phone_number'], FILTER_SANITIZE_STRING);
 
-    // Query the database for patient data
-    $sql = "SELECT * FROM `queue_list` WHERE `phone_number` = '$phone_number' ORDER BY `date_created` DESC LIMIT 1";
-    $result = $conn->query($sql);
+    // Get patient history using the DBConnection method
+    $patientHistory = $conn->getPatientHistory($phone_number, 1);
 
     // Check if any data was found
-    if($row = $result->fetchArray(SQLITE3_ASSOC)) {
+    if(!empty($patientHistory)) {
+        // Get the most recent patient data
+        $recentPatient = $patientHistory[0];
+
         // Return the patient data as JSON
         echo json_encode([
             'status' => 'success',
             'data' => [
-                'customer_name' => $row['customer_name'],
-                'age' => $row['age'],
-                'sex' => $row['sex']
+                'customer_name' => $recentPatient['customer_name'],
+                'age' => $recentPatient['age'],
+                'sex' => $recentPatient['sex']
             ]
         ]);
     } else {

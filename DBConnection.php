@@ -1,5 +1,5 @@
 <?php
-require_once('config.php'); 
+require_once('config.php');
 
 if (!is_dir(__DIR__ . '/db')) {
     mkdir(__DIR__ . '/db', 0777, true);
@@ -94,42 +94,70 @@ class DBConnection extends SQLite3
         }
     }
 
-  public function decrypt_data($data)
-{
-    $data = base64_decode($data);
-    if ($data === false) {
-        return false; // Failed to decode base64
+    public function decrypt_data($data)
+    {
+        $data = base64_decode($data);
+        if ($data === false) {
+            return false; // Failed to decode base64
+        }
+
+        $iv_length = openssl_cipher_iv_length('aes-256-cbc');
+        $iv = substr($data, 0, $iv_length);
+        $encrypted = substr($data, $iv_length);
+
+        $decrypted = openssl_decrypt($encrypted, 'aes-256-cbc', $this->encryption_key, OPENSSL_RAW_DATA, $iv);
+        if ($decrypted === false) {
+            return false; // Failed to decrypt
+        }
+
+        return $decrypted;
     }
-
-    $iv_length = openssl_cipher_iv_length('aes-256-cbc');
-    $iv = substr($data, 0, $iv_length);
-    $encrypted = substr($data, $iv_length);
-
-    $decrypted = openssl_decrypt($encrypted, 'aes-256-cbc', $this->encryption_key, OPENSSL_RAW_DATA, $iv);
-    if ($decrypted === false) {
-        return false; // Failed to decrypt
+    public function getPatientHistory($phone_number, $limit)
+    {
+        // Step 1: Decrypt all mobile numbers from the database and store in JSON
+        $decrypted_numbers = [];
+        $result = $this->query("SELECT queue_id, phone_number FROM `queue_list`");
+        while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+            $decrypted_number = $this->decrypt_data($row['phone_number']);
+            if ($decrypted_number !== false) {
+                $decrypted_numbers[$row['queue_id']] = $decrypted_number;
+            }
+        }
+    
+        // Step 2: Find exact matches of the entered phone number
+        $exact_matches = [];
+        foreach ($decrypted_numbers as $id => $decrypted_number) {
+            if ($decrypted_number === $phone_number) {
+                $exact_matches[$id] = $decrypted_number;
+            }
+        }
+    
+        // Step 3: Get exact matches from db 
+        $rows = [];
+        $exact_matchesCount = count($exact_matches);
+        foreach ($exact_matches as $id => $exact_match) {
+            $result = $this->query("SELECT * FROM `queue_list` WHERE `queue_id` = '{$id}' ORDER BY `date_created` DESC LIMIT 5");
+            while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+                $row['customer_name'] = $this->decrypt_data($row['customer_name']);
+                $row['phone_number'] = $this->decrypt_data($row['phone_number']);
+                $rows[] = $row;
+            }
+            // Check if the number of exact matches found exceeds 5
+            if (count($rows) >= $limit) {
+                break;
+            }
+        }
+    
+        // Step 4: Destroy the JSON containing decrypted numbers
+        unset($decrypted_numbers_json);
+    
+        return $rows;
     }
-
-    return $decrypted;
-}
-
-
-public function getPatientHistory($phone_number, $limit = null)
-{
-    $qry = "SELECT * FROM `queue_list` WHERE `phone_number` = '$phone_number' ORDER BY `date_created` DESC";
-    if ($limit) {
-        $qry .= " LIMIT $limit";
-    }
-    $result = $this->query($qry);
-    $rows = [];
-    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
-        // Decrypt the encrypted fields before adding them to the result
-        $row['customer_name'] = $this->decrypt_data($row['customer_name']);
-        $row['phone_number'] = $this->decrypt_data($row['phone_number']);
-        $rows[] = $row;
-    }
-    return $rows;
-}
+    
+    
+    
+    
+    
 
 
     function generateQueueNumber()
@@ -157,4 +185,3 @@ public function getPatientHistory($phone_number, $limit = null)
 }
 
 $conn = new DBConnection();
-?>
