@@ -79,7 +79,7 @@
 <script>
     $(function(){
         $('#create_new').click(function(){
-            uni_modal('Add New Cashier',"manage_cashier.php")
+            uni_modal('Add New Doctor',"manage_cashier.php")
         })
         $('.edit_data').click(function(){
             uni_modal('Edit Cashier Details',"manage_cashier.php?id="+$(this).attr('data-id'))

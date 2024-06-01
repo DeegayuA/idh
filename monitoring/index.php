@@ -132,7 +132,7 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
         </marquee>
     </nav>
     <main>
-    <div class="container-fluid py-3" id="page-container">
+    <div class="container-fluid" id="page-container">
         <?php 
             if(isset($_SESSION['flashdata'])):
         ?>

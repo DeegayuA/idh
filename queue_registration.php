@@ -1,4 +1,6 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 session_start();
 require_once('DBConnection.php');
 $page = isset($_GET['page']) ? $_GET['page'] : 'home';
@@ -236,79 +238,81 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
         </div>
     </div>
     <script>
-        $(function() {
-            $('#phone_number').on('blur', function() {
-                var phoneNumber = $(this).val();
-                console.log('Phone number entered: ' + phoneNumber);
-                if (phoneNumber) {
-                    $.ajax({
-                        url: 'fetch_patient_data.php',
-                        method: 'POST',
-                        data: {
-                            phone_number: phoneNumber
-                        },
-                        dataType: 'json',
-                        success: function(response) {
-                            // console.log('Response from fetch_patient_data.php:', response);
-                            if (response.status === 'success') {
-                                $('#customer_name').val(response.data.customer_name);
-                                $('#age').val(response.data.age);
-                                $('#sex').val(response.data.sex);
-                            }
-                        },
-                        error: function() {
-                            console.log('Error fetching patient data.');
-                        }
-                    });
+$(function() {
+    $('#phone_number').on('blur', function() {
+        var phoneNumber = $(this).val();
+        console.log('Phone number entered: ' + phoneNumber);
+        if (phoneNumber) {
+            $.ajax({
+                url: 'fetch_patient_data.php',
+                method: 'POST',
+                data: {
+                    phone_number: phoneNumber
+                },
+                dataType: 'json',
+                success: function(response) {
+                    // console.log('Response from fetch_patient_data.php:', response);
+                    if (response.status === 'success') {
+                        $('#customer_name').val(response.data.customer_name);
+                        $('#age').val(response.data.age);
+                        $('#sex').val(response.data.sex);
+                    }
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    console.log('Error fetching patient data:', textStatus, errorThrown);
+                    alert('Error fetching patient data: ' + textStatus + ' - ' + errorThrown);
                 }
             });
+        }
+    });
 
-            $('#queue-form').submit(function(e) {
-                e.preventDefault()
-                var _this = $(this)
-                _this.find('.pop-msg').remove()
-                var el = $('<div>')
-                el.addClass('alert pop-msg')
-                el.hide()
-                _this.find('button[type="submit"]').attr('disabled', true)
-                console.log('Form data:', _this.serialize());
-                $.ajax({
-                    url: './Actions.php?a=save_queue',
-                    method: 'POST',
-                    data: _this.serialize(),
-                    dataType: 'JSON',
-                    error: err => {
-                        console.log('Error saving data:', err)
-                        el.addClass("alert-danger")
-                        el.text("An error occurred while saving data.")
-                        _this.find('button[type="submit"]').attr('disabled', false)
-                        _this.prepend(el)
-                        el.show('slow')
-                    },
-                    success: function(resp) {
-                        // console.log('Response from save_queue:', resp);
-                        if (resp.status == 'success') {
-                            uni_modal("Your Queue", "get_queue.php?success=true&id=" + resp.id)
-                            $('#uni_modal').on('hide.bs.modal', function(e) {
-                                location.reload()
-                            })
-                        } else if (resp.status == 'failed' && !!resp.msg) {
-                            el.addClass('alert-' + resp.status)
-                            el.text(resp.msg)
-                            _this.prepend(el)
-                            el.show('slow')
-                        } else {
-                            el.addClass('alert-' + resp.status)
-                            el.text("An Error occurred.")
-                            _this.prepend(el)
-                            el.show('slow')
-                        }
-                        _this.find('button[type="submit"]').attr('disabled', false)
-                    }
-                })
-            })
+    $('#queue-form').submit(function(e) {
+        e.preventDefault()
+        var _this = $(this)
+        _this.find('.pop-msg').remove()
+        var el = $('<div>')
+        el.addClass('alert pop-msg')
+        el.hide()
+        _this.find('button[type="submit"]').attr('disabled', true)
+        console.log('Form data:', _this.serialize());
+        $.ajax({
+            url: './Actions.php?a=save_queue',
+            method: 'POST',
+            data: _this.serialize(),
+            dataType: 'JSON',
+            error: function(jqXHR, textStatus, errorThrown) {
+                console.log('Error saving data:', textStatus, errorThrown)
+                el.addClass("alert-danger")
+                el.text("An error occurred while saving data: " + textStatus + ' - ' + errorThrown)
+                _this.find('button[type="submit"]').attr('disabled', false)
+                _this.prepend(el)
+                el.show('slow')
+            },
+            success: function(resp) {
+                // console.log('Response from save_queue:', resp);
+                if (resp.status == 'success') {
+                    uni_modal("Your Queue", "get_queue.php?success=true&id=" + resp.id)
+                    $('#uni_modal').on('hide.bs.modal', function(e) {
+                        location.reload()
+                    })
+                } else if (resp.status == 'failed' && !!resp.msg) {
+                    el.addClass('alert-' + resp.status)
+                    el.text(resp.msg)
+                    _this.prepend(el)
+                    el.show('slow')
+                } else {
+                    el.addClass('alert-' + resp.status)
+                    el.text("An Error occurred.")
+                    _this.prepend(el)
+                    el.show('slow')
+                }
+                _this.find('button[type="submit"]').attr('disabled', false)
+            }
         })
-    </script>
+    })
+})
+</script>
+
 </body>
 
 </html>

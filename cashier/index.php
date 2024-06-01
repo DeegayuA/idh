@@ -1,9 +1,21 @@
 <?php
+// Start the session
 session_start();
-if(!isset($_SESSION['cashier_id'])){
+
+// Set the session timeout duration in seconds
+$session_timeout = 1800; // 30 minutes
+
+// Check if the user is logged in
+if (!isset($_SESSION['cashier_id']) || (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity']) > $session_timeout)) {
+    // If not logged in or session expired, redirect to login page
     header("Location:./login.php");
     exit;
 }
+
+// Update last activity timestamp
+$_SESSION['last_activity'] = time();
+
+// Require necessary files
 require_once('./../DBConnection.php');
 $page = isset($_GET['page']) ? $_GET['page'] : 'home';
 ?>

@@ -143,7 +143,7 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
                         <a class="nav-link <?php echo ($page == 'users')? 'active' : '' ?>" aria-current="page" href="./?page=users">Users</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="./?page=cashiers">Cashier List</a>
+                        <a class="nav-link" href="./?page=cashiers">Doctors List</a>
                     </li>
                     
                 </ul>

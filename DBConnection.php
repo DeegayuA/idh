@@ -3,8 +3,8 @@ if (!is_dir(__DIR__ . '/db')) {
     mkdir(__DIR__ . '/db', 0777, true);
 }
 
-if (!defined('db_file')) {
-    define('db_file', __DIR__ . '/db/cashier_queuing_db.db');
+if (!defined('DB_FILE')) {
+    define('DB_FILE', __DIR__ . '/db/cashier_queuing_db.db');
 }
 
 if (!defined('tZone')) define('tZone', "Asia/Colombo");
@@ -22,11 +22,12 @@ class DBConnection extends SQLite3
     function __construct()
     {
         // Check if database file exists, if not, create it
-        if (!file_exists(db_file)) {
-            touch(db_file); // Create an empty file
+        if (!file_exists(DB_FILE)) {
+            touch(DB_FILE); // Create an empty file
         }
 
-        $this->open(db_file);
+        // Open the database with encryption
+        $this->openEncryptedDB(DB_FILE, 'my_secret_key');
         $this->createFunction('md5', 'my_udf_md5');
         $this->exec("PRAGMA foreign_keys = ON;");
 
@@ -60,6 +61,18 @@ class DBConnection extends SQLite3
         $this->exec("INSERT or IGNORE INTO `user_list` VALUES (1,'Administrator','admin',md5('admin123'),1, CURRENT_TIMESTAMP)");
     }
 
+    private function openEncryptedDB($file, $key)
+    {
+        $this->open($file);
+        $this->exec("PRAGMA key = '$key';");
+
+        // Optionally, verify if the key is correct
+        $result = $this->query("SELECT count(*) FROM sqlite_master;");
+        if ($result === false) {
+            throw new Exception("Failed to open the database with the provided key.");
+        }
+    }
+
     function addColumnIfNotExists($table, $column, $type)
     {
         $result = $this->query("PRAGMA table_info($table)");
@@ -75,7 +88,8 @@ class DBConnection extends SQLite3
         }
     }
 
-    public function getPatientHistory($phone_number, $limit = null) {
+    public function getPatientHistory($phone_number, $limit = null)
+    {
         $qry = "SELECT * FROM `queue_list` WHERE `phone_number` = '$phone_number' ORDER BY `date_created` DESC";
         if ($limit) {
             $qry .= " LIMIT $limit";
@@ -87,7 +101,6 @@ class DBConnection extends SQLite3
         }
         return $rows;
     }
-    
 
     function generateQueueNumber()
     {
@@ -96,7 +109,7 @@ class DBConnection extends SQLite3
         $unique = substr(uniqid(), -5); // Get the last 5 characters for uniqueness
         return $date . $time . $unique;
     }
-    
+
     function getPatientDetails($queue_id)
     {
         $sql = "SELECT customer_name, age, sex FROM `queue_list` WHERE `queue_id` = '$queue_id'";
