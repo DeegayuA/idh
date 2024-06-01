@@ -1,4 +1,6 @@
 <?php
+require_once('config.php'); 
+
 if (!is_dir(__DIR__ . '/db')) {
     mkdir(__DIR__ . '/db', 0777, true);
 }
@@ -18,9 +20,13 @@ function my_udf_md5($string)
 class DBConnection extends SQLite3
 {
     protected $db;
+    private $encryption_key;
 
     function __construct()
     {
+        global $encryption_key;
+        $this->encryption_key = base64_decode($encryption_key);
+
         // Check if database file exists, if not, create it
         if (!file_exists(DB_FILE)) {
             touch(DB_FILE); // Create an empty file
@@ -88,6 +94,26 @@ class DBConnection extends SQLite3
         }
     }
 
+  private function decrypt_data($data)
+{
+    $data = base64_decode($data);
+    if ($data === false) {
+        return false; // Failed to decode base64
+    }
+
+    $iv_length = openssl_cipher_iv_length('aes-256-cbc');
+    $iv = substr($data, 0, $iv_length);
+    $encrypted = substr($data, $iv_length);
+
+    $decrypted = openssl_decrypt($encrypted, 'aes-256-cbc', $this->encryption_key, OPENSSL_RAW_DATA, $iv);
+    if ($decrypted === false) {
+        return false; // Failed to decrypt
+    }
+
+    return $decrypted;
+}
+
+
     public function getPatientHistory($phone_number, $limit = null)
     {
         $qry = "SELECT * FROM `queue_list` WHERE `phone_number` = '$phone_number' ORDER BY `date_created` DESC";
@@ -97,6 +123,8 @@ class DBConnection extends SQLite3
         $result = $this->query($qry);
         $rows = [];
         while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+            $row['customer_name'] = $this->decrypt_data($row['customer_name']);
+            $row['phone_number'] = $this->decrypt_data($row['phone_number']);
             $rows[] = $row;
         }
         return $rows;
@@ -114,6 +142,9 @@ class DBConnection extends SQLite3
     {
         $sql = "SELECT customer_name, age, sex FROM `queue_list` WHERE `queue_id` = '$queue_id'";
         $result = $this->querySingle($sql, true);
+        if ($result) {
+            $result['customer_name'] = $this->decrypt_data($result['customer_name']);
+        }
         return $result;
     }
 

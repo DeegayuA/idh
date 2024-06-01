@@ -178,47 +178,48 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
 
 <script>
     $(function() {
-        $('#login-form').submit(function(e) {
-            e.preventDefault();
-            $('.pop_msg').remove();
-            var _this = $(this);
-            var _el = $('<div>');
-            _el.addClass('pop_msg');
-            _this.find('button').attr('disabled', true);
-            _this.find('button[type="submit"]').text('Logging in...');
-            $.ajax({
-                url: './Actions.php?a=login',
-                method: 'POST',
-                data: $(this).serialize(),
-                dataType: 'JSON',
-                error: err => {
-                    console.log(err);
+    $('#login-form').submit(function(e) {
+        e.preventDefault();
+        $('.pop_msg').remove();
+        var _this = $(this);
+        var _el = $('<div>');
+        _el.addClass('pop_msg');
+        _this.find('button').attr('disabled', true);
+        _this.find('button[type="submit"]').text('Logging in...');
+        $.ajax({
+            url: './Actions.php?a=login',
+            method: 'POST',
+            data: $(this).serialize(),
+            dataType: 'JSON',
+            error: function(jqXHR, textStatus, errorThrown) {
+                console.log("AJAX error: " + textStatus + ' : ' + errorThrown);
+                console.log(jqXHR.responseText);
+                _el.addClass('alert alert-danger');
+                _el.text("An error occurred: " + textStatus + ' : ' + errorThrown);
+                _this.prepend(_el);
+                _el.show('slow');
+                _this.find('button').attr('disabled', false);
+                _this.find('button[type="submit"]').text('Login');
+            },
+            success: function(resp) {
+                if (resp.status == 'success') {
+                    _el.addClass('alert alert-success');
+                    setTimeout(() => {
+                        location.replace('./');
+                    }, 2000);
+                } else {
                     _el.addClass('alert alert-danger');
-                    _el.text("An error occurred.");
-                    _this.prepend(_el);
-                    _el.show('slow');
-                    _this.find('button').attr('disabled', false);
-                    _this.find('button[type="submit"]').text('Login');
-                },
-                success: function(resp) {
-                    if (resp.status == 'success') {
-                        _el.addClass('alert alert-success');
-                        setTimeout(() => {
-                            location.replace('./');
-                        }, 2000);
-                    } else {
-                        _el.addClass('alert alert-danger');
-                    }
-                    _el.text(resp.msg);
-                    _el.hide();
-                    _this.prepend(_el);
-                    _el.show('slow');
-                    _this.find('button').attr('disabled', false);
-                    _this.find('button[type="submit"]').text('Login');
                 }
-            });
+                _el.text(resp.msg);
+                _el.hide();
+                _this.prepend(_el);
+                _el.show('slow');
+                _this.find('button').attr('disabled', false);
+                _this.find('button[type="submit"]').text('Login');
+            }
         });
     });
-</script>
+});
 
+</script>
 </html>

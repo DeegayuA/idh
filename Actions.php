@@ -1,14 +1,52 @@
 <?php 
 session_start();
 require_once('DBConnection.php');
+require_once('config.php'); 
 
 Class Actions extends DBConnection{
-    function __construct(){
+    private $encryption_key;
+    function __construct() {
         parent::__construct();
+        global $encryption_key;
+        $this->encryption_key = base64_decode($encryption_key);
     }
-    function __destruct(){
+    
+
+    function __destruct() {
         parent::__destruct();
     }
+
+    private function encrypt_data($data) {
+        $iv = openssl_random_pseudo_bytes(openssl_cipher_iv_length('aes-256-cbc'));
+        $encrypted = openssl_encrypt($data, 'aes-256-cbc', $this->encryption_key, OPENSSL_RAW_DATA, $iv);
+    
+        if ($encrypted === false) {
+            return false; // Failed to encrypt
+        }
+    
+        return base64_encode($iv . $encrypted);
+    }
+    
+
+    private function decrypt_data($data) {
+        $data = base64_decode($data);
+        if ($data === false) {
+            return false; // Failed to decode base64
+        }
+    
+        $iv_length = openssl_cipher_iv_length('aes-256-cbc');
+        $iv = substr($data, 0, $iv_length);
+        $encrypted = substr($data, $iv_length);
+    
+        $decrypted = openssl_decrypt($encrypted, 'aes-256-cbc', $this->encryption_key, OPENSSL_RAW_DATA, $iv);
+        if ($decrypted === false) {
+            return false; // Failed to decrypt
+        }
+    
+        return $decrypted;
+    }
+    
+    
     function login(){
         extract($_POST);
         $sql = "SELECT * FROM user_list where username = '{$username}' and `password` = '".md5($password)."' ";
@@ -58,55 +96,70 @@ Class Actions extends DBConnection{
                 $this->query("UPDATE `cashier_list` set log_status = 0 where cashier_id  = {$_SESSION['cashier_id']}");
         header("location:./cashier");
     }
-    function save_user(){
+ 
+    function save_user() {
         extract($_POST);
         $data = "";
-        foreach($_POST as $k => $v){
-        if(!in_array($k,array('id'))){
-            if(!empty($id)){
-                if(!empty($data)) $data .= ",";
-                $data .= " `{$k}` = '{$v}' ";
-                }else{
+        $cols = [];
+        $values = [];
+    
+        foreach($_POST as $k => $v) {
+            if(!in_array($k, array('id'))) {
+                if(!empty($id)) {
+                    if(!empty($data)) $data .= ",";
+                    $data .= " `{$k}` = '{$v}' ";
+                } else {
                     $cols[] = $k;
                     $values[] = "'{$v}'";
                 }
             }
         }
-        if(empty($id)){
-            $cols[] = 'password';
-            $values[] = "'".md5($username)."'";
+    
+        if(empty($id)) {
+            // Ensure fullname is included for new users
+            if (!isset($fullname) || empty($fullname)) {
+                $resp['status'] = 'failed';
+                $resp['msg'] = "Fullname is required.";
+                return json_encode($resp);
+            }
+            // Include password if not set
+            if (!in_array('password', $cols)) {
+                $cols[] = 'password';
+                $values[] = "'".md5($password)."'";
+            }
         }
-        if(isset($cols) && isset($values)){
-            $data = "(".implode(',',$cols).") VALUES (".implode(',',$values).")";
+    
+        if(isset($cols) && isset($values)) {
+            $data = "(".implode(',', $cols).") VALUES (".implode(',', $values).")";
         }
-        
-
-       
-        @$check= $this->query("SELECT count(user_id) as `count` FROM user_list where `username` = '{$username}' ".($id > 0 ? " and user_id != '{$id}' " : ""))->fetchArray()['count'];
-        if(@$check> 0){
+    
+        @$check = $this->query("SELECT count(user_id) as `count` FROM user_list where `username` = '{$username}' ".($id > 0 ? " and user_id != '{$id}' " : ""))->fetchArray()['count'];
+        if(@$check > 0) {
             $resp['status'] = 'failed';
             $resp['msg'] = "Username already exists.";
-        }else{
-            if(empty($id)){
+        } else {
+            if(empty($id)) {
                 $sql = "INSERT INTO `user_list` {$data}";
-            }else{
+            } else {
                 $sql = "UPDATE `user_list` set {$data} where user_id = '{$id}'";
             }
             @$save = $this->query($sql);
-            if($save){
+            if($save) {
                 $resp['status'] = 'success';
                 if(empty($id))
-                $resp['msg'] = 'New User successfully saved.';
+                    $resp['msg'] = 'New User successfully saved.';
                 else
-                $resp['msg'] = 'User Details successfully updated.';
-            }else{
+                    $resp['msg'] = 'User Details successfully updated.';
+            } else {
                 $resp['status'] = 'failed';
                 $resp['msg'] = 'Saving User Details Failed. Error: '.$this->lastErrorMsg();
-                $resp['sql'] =$sql;
+                $resp['sql'] = $sql;
             }
         }
         return json_encode($resp);
     }
+    
+
     function delete_user(){
         extract($_POST);
 
@@ -231,43 +284,52 @@ Class Actions extends DBConnection{
         
         return json_encode($resp);
     }
-    function save_queue(){
-        $code = sprintf("%'.04d",1);
-        while(true){
+    function save_queue() {
+        $code = sprintf("%'.04d", 1);
+        while (true) {
             $chk = $this->query("SELECT count(queue_id) `count` FROM `queue_list` where queue = '".$code."' and date(date_created) = '".date('Y-m-d')."' ")->fetchArray()['count'];
-            if($chk > 0){
-                $code = sprintf("%'.04d",abs($code) + 1);
-            }else{
+            if ($chk > 0) {
+                $code = sprintf("%'.04d", abs($code) + 1);
+            } else {
                 break;
             }
         }
-        $_POST['queue'] = $code;
-        extract($_POST);
-        $sql = "INSERT INTO `queue_list` (`queue`,`customer_name`, `age`, `sex`, `phone_number`) VALUES('{$queue}','{$customer_name}', '{$age}', '{$sex}', '{$phone_number}')";
+    
+        // Encrypt customer data before saving
+        $encrypted_customer_name = $this->encrypt_data($_POST['customer_name']);
+        $encrypted_phone_number = $this->encrypt_data($_POST['phone_number']);
+    
+        $sql = "INSERT INTO `queue_list` (`queue`,`customer_name`, `age`, `sex`, `phone_number`) VALUES('{$code}', '{$encrypted_customer_name}', '{$_POST['age']}', '{$_POST['sex']}', '{$encrypted_phone_number}')";
         $save = $this->query($sql);
-        if($save){
+        if ($save) {
             $resp['status'] = 'success';
             $resp['id'] = $this->query("SELECT last_insert_rowid()")->fetchArray()[0];
-        }else{
+        } else {
             $resp['status'] = 'failed';
-            $resp['msg'] = "An error occured. Error: ".$this->lastErrorMsg();
+            $resp['msg'] = "An error occurred. Error: ".$this->lastErrorMsg();
         }
         return json_encode($resp);
     }
-    function get_queue(){
+    
+    function get_queue() {
         extract($_POST);
         $qry = $this->query("SELECT * FROM `queue_list` where queue_id = '{$qid}' ");
         @$res = $qry->fetchArray();
-            $resp['status']='success';
-        if($res){
-            $resp['queue']=$res['queue'];
-            $resp['name']=$res['customer_name'];
-        }else{
-            $resp['queue']="";
-            $resp['name']="";
+        $resp['status'] = 'success';
+        if ($res) {
+            $resp['queue'] = $res['queue'];
+            $resp['name'] = $this->decrypt_data($res['customer_name']);
+            $resp['phone_number'] = $this->decrypt_data($res['phone_number']); // Decrypt phone_number field
+        } else {
+            $resp['queue'] = "";
+            $resp['name'] = "";
+            $resp['phone_number'] = "";
         }
         return json_encode($resp);
     }
+    
+    
+
     function next_queue() {
         extract($_POST);
         $get = $this->query("SELECT queue_id, queue, customer_name, age, sex FROM queue_list WHERE status = 0 AND date(date_created) = '" . date("Y-m-d") . "' ORDER BY queue_id ASC LIMIT 1");
@@ -275,12 +337,15 @@ Class Actions extends DBConnection{
         $resp['status'] = 'success';
         if ($res) {
             $this->query("UPDATE queue_list SET status = 1 WHERE queue_id = '{$res['queue_id']}'");
-            $resp['data'] = $res;
+            // Decrypt customer data before returning
+            $res['customer_name'] = $this->decrypt_data($res['customer_name']);
+                        $resp['data'] = $res;
         } else {
             $resp['data'] = $res;
         }
         return json_encode($resp);
     }
+
     
     function update_video(){
         extract($_FILES);
@@ -338,50 +403,161 @@ Class Actions extends DBConnection{
         return json_encode($resp);
     }
     
-}
-$a = isset($_GET['a']) ?$_GET['a'] : '';
+}$a = isset($_GET['a']) ? $_GET['a'] : '';
 $action = new Actions();
-switch($a){
+switch ($a) {
     case 'login':
         echo $action->login();
-    break;
+        break;
     case 'c_login':
         echo $action->c_login();
-    break;
+        break;
     case 'logout':
         echo $action->logout();
-    break;
+        break;
     case 'c_logout':
         echo $action->c_logout();
-    break;
+        break;
     case 'save_user':
         echo $action->save_user();
-    break;
+        break;
     case 'delete_user':
         echo $action->delete_user();
-    break;
+        break;
     case 'update_credentials':
         echo $action->update_credentials();
-    break;
+        break;
     case 'save_cashier':
         echo $action->save_cashier();
-    break;
+        break;
     case 'delete_cashier':
         echo $action->delete_cashier();
-    break;
+        break;
     case 'save_queue':
         echo $action->save_queue();
-    break;
+        break;
     case 'get_queue':
         echo $action->get_queue();
-    break;
+        break;
     case 'next_queue':
         echo $action->next_queue();
-    break;
+        break;
     case 'update_video':
         echo $action->update_video();
-    break;
+        break;
     default:
-    // default action here
-    break;
+        // default action here
+        break;
 }
+?>
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Actions Class</title>
+</head>
+<body>
+    <h1>Test Actions Class Functions</h1>
+
+    <!-- Form for login -->
+    <h2>Login</h2>
+    <form id="loginForm">
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" value="testuser"><br>
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" value="testpass"><br>
+        <button type="button" onclick="testFunction('login', 'loginForm')">Login</button>
+    </form>
+
+    <!-- Form for cashier login -->
+    <h2>Cashier Login</h2>
+    <form id="cashierLoginForm">
+        <label for="cashier_id">Cashier ID:</label>
+        <input type="text" id="cashier_id" name="cashier_id" value="1"><br>
+        <button type="button" onclick="testFunction('c_login', 'cashierLoginForm')">Cashier Login</button>
+    </form>
+
+    <!-- Form for save user -->
+    <h2>Save User</h2>
+    <form id="saveUserForm">
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" value="newuser"><br>
+        <label for="fullname">Fullname:</label>
+        <input type="text" id="fullname" name="fullname" value="New User"><br>
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" value="newpass"><br>
+        <button type="button" onclick="testFunction('save_user', 'saveUserForm')">Save User</button>
+    </form>
+
+    <!-- Form for save queue -->
+    <h2>Save Queue</h2>
+    <form id="saveQueueForm">
+        <label for="customer_name">Customer Name:</label>
+        <input type="text" id="customer_name" name="customer_name" value="John Doe"><br>
+        <label for="age">Age:</label>
+        <input type="number" id="age" name="age" value="30"><br>
+        <label for="sex">Sex:</label>
+        <input type="text" id="sex" name="sex" value="M"><br>
+        <label for="phone_number">Phone Number:</label>
+        <input type="text" id="phone_number" name="phone_number" value="1234567890"><br>
+        <button type="button" onclick="testFunction('save_queue', 'saveQueueForm')">Save Queue</button>
+    </form>
+
+    <!-- Form for get queue -->
+    <h2>Get Queue</h2>
+    <form id="getQueueForm">
+        <label for="qid">Queue ID:</label>
+        <input type="number" id="qid" name="qid" value="1"><br>
+        <button type="button" onclick="testFunction('get_queue', 'getQueueForm')">Get Queue</button>
+    </form>
+
+    <!-- Form for next queue -->
+    <h2>Next Queue</h2>
+    <form id="nextQueueForm">
+        <button type="button" onclick="testFunction('next_queue', 'nextQueueForm')">Next Queue</button>
+    </form>
+
+    <!-- Form for update video -->
+    <h2>Update Video</h2>
+    <form id="updateVideoForm" enctype="multipart/form-data">
+        <label for="vid">Video File:</label>
+        <input type="file" id="vid" name="vid"><br>
+        <label for="video">Current Video:</label>
+        <input type="text" id="video" name="video" value="current_video.mp4"><br>
+        <button type="button" onclick="testFunction('update_video', 'updateVideoForm')">Update Video</button>
+    </form>
+
+    <div id="response"></div>
+
+    <script>
+        function testFunction(action, formId) {
+            var form = document.getElementById(formId);
+            var formData = new FormData(form);
+
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "home.php?a=" + action, true);
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    var responseDiv = document.getElementById('response');
+                    try {
+                        var jsonResponse = JSON.parse(xhr.responseText);
+                        if (jsonResponse.status === 'failed') {
+                            responseDiv.innerText = jsonResponse.msg;
+                        } else {
+                            responseDiv.innerText = JSON.stringify(jsonResponse, null, 2);
+                        }
+                    } catch (e) {
+                        responseDiv.innerText = xhr.responseText;
+                    }
+                } else if (xhr.readyState === 4) {
+                    document.getElementById('response').innerText = 'Error: ' + xhr.status;
+                }
+            };
+            xhr.send(formData);
+        }
+    </script>
+</body>
+</html>
