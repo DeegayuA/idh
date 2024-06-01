@@ -45,11 +45,13 @@ require_once('./../DBConnection.php');
         background-color: transparent;
         border: 1px solid var(--primary-color);
         transition: all 0.3s ease-in-out;
+        color: var(--text-color);
     }
 
     .btn-secondary:hover {
         background-color: transparent;
         border: 2px solid var(--primary-hover);
+        color: var(--text-color);
     }
 </style>
 
