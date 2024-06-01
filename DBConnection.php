@@ -94,7 +94,7 @@ class DBConnection extends SQLite3
         }
     }
 
-  private function decrypt_data($data)
+  public function decrypt_data($data)
 {
     $data = base64_decode($data);
     if ($data === false) {
@@ -114,21 +114,23 @@ class DBConnection extends SQLite3
 }
 
 
-    public function getPatientHistory($phone_number, $limit = null)
-    {
-        $qry = "SELECT * FROM `queue_list` WHERE `phone_number` = '$phone_number' ORDER BY `date_created` DESC";
-        if ($limit) {
-            $qry .= " LIMIT $limit";
-        }
-        $result = $this->query($qry);
-        $rows = [];
-        while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
-            $row['customer_name'] = $this->decrypt_data($row['customer_name']);
-            $row['phone_number'] = $this->decrypt_data($row['phone_number']);
-            $rows[] = $row;
-        }
-        return $rows;
+public function getPatientHistory($phone_number, $limit = null)
+{
+    $qry = "SELECT * FROM `queue_list` WHERE `phone_number` = '$phone_number' ORDER BY `date_created` DESC";
+    if ($limit) {
+        $qry .= " LIMIT $limit";
     }
+    $result = $this->query($qry);
+    $rows = [];
+    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+        // Decrypt the encrypted fields before adding them to the result
+        $row['customer_name'] = $this->decrypt_data($row['customer_name']);
+        $row['phone_number'] = $this->decrypt_data($row['phone_number']);
+        $rows[] = $row;
+    }
+    return $rows;
+}
+
 
     function generateQueueNumber()
     {

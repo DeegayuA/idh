@@ -17,6 +17,9 @@ if (isset($_GET['id'])) {
             }
         }
 
+        $customer_name = $conn->decrypt_data($customer_name);
+        $phone_number = $conn->decrypt_data($phone_number);
+
         // Get Patient History
         $patientHistory = $conn->getPatientHistory($phone_number, 5); // Limit to 5 entries
 
