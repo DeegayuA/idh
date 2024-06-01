@@ -25,7 +25,7 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
     <script src="./Font-Awesome-master/js/all.min.js"></script>
     <script src="./select2/js/select2.min.js"></script>
     <script src="./js/script.js"></script>
-    <style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js" integrity="sha512-r6rDA7W6ZeQhvl8S7yRVQUKVHdexq+GAlNkNNqVC7YyIV+NwqCTJe2hDWCiffTyRNOeGEzRRJ9ifvRm/HCzGYg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>    <style>
         :root {
             --background-color: #ffffff;
             --text-color: #000000;
@@ -91,6 +91,15 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
         }
 
         .btn-primary:hover {
+            background-color: var(--primary-hover);
+            border-color: var(--primary-hover);
+        }
+
+        .btn-secondary{
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        .btn-secondary:hover {
             background-color: var(--primary-hover);
             border-color: var(--primary-hover);
         }
@@ -174,8 +183,12 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
                 <form action="" id="queue-form">
                     <div class="form-group mb-3">
                         <label for="phone_number" class="control-label text-info2">Enter Phone Number</label>
-                        <input type="text" id="phone_number" name="phone_number" autocomplete="off" class="form-control form-control-lg rounded-0 border-0 border-bottom" required>
+                        <div class="input-group">
+                            <input type="text" id="phone_number" name="phone_number" autocomplete="off" class="form-control form-control-lg rounded-0 border-0 border-bottom" required>
+                            <button type="button" class="btn btn-secondary" id="scan-qr-btn">Scan QR</button>
+                        </div>
                     </div>
+                    <div id="qr-reader" style="width: 100%; display: none;"></div>
                     <div class="form-group mb-3">
                         <label for="customer_name" class="control-label text-info2">Enter your Name</label>
                         <input type="text" id="customer_name" name="customer_name" autofocus autocomplete="off" class="form-control form-control-lg rounded-0 border-0 border-bottom" required>
@@ -237,81 +250,143 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
             </div>
         </div>
     </div>
+   
     <script>
-$(function() {
-    $('#phone_number').on('blur', function() {
-        var phoneNumber = $(this).val();
-        console.log('Phone number entered: ' + phoneNumber);
-        if (phoneNumber) {
-            $.ajax({
-                url: 'fetch_patient_data.php',
-                method: 'POST',
-                data: {
-                    phone_number: phoneNumber
-                },
-                dataType: 'json',
-                success: function(response) {
-                    // console.log('Response from fetch_patient_data.php:', response);
-                    if (response.status === 'success') {
-                        $('#customer_name').val(response.data.customer_name);
-                        $('#age').val(response.data.age);
-                        $('#sex').val(response.data.sex);
+    $(function() {
+        $('#phone_number').on('blur', function() {
+            var phoneNumber = $(this).val();
+            console.log('Phone number entered: ' + phoneNumber);
+            if (phoneNumber) {
+                $.ajax({
+                    url: 'fetch_patient_data.php',
+                    method: 'POST',
+                    data: { phone_number: phoneNumber },
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.status === 'success') {
+                            $('#customer_name').val(response.data.customer_name);
+                            $('#age').val(response.data.age);
+                            $('#sex').val(response.data.sex);
+                        }
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        console.log('Error fetching patient data:', textStatus, errorThrown);
+                        alert('Error fetching patient data: ' + textStatus + ' - ' + errorThrown);
                     }
-                },
+                });
+            }
+        });
+
+        $('#queue-form').submit(function(e) {
+            e.preventDefault()
+            var _this = $(this)
+            _this.find('.pop-msg').remove()
+            var el = $('<div>')
+            el.addClass('alert pop-msg')
+            el.hide()
+            _this.find('button[type="submit"]').attr('disabled', true)
+            console.log('Form data:', _this.serialize());
+            $.ajax({
+                url: './Actions.php?a=save_queue',
+                method: 'POST',
+                data: _this.serialize(),
+                dataType: 'JSON',
                 error: function(jqXHR, textStatus, errorThrown) {
-                    console.log('Error fetching patient data:', textStatus, errorThrown);
-                    alert('Error fetching patient data: ' + textStatus + ' - ' + errorThrown);
+                    console.log('Error saving data:', textStatus, errorThrown)
+                    el.addClass("alert-danger")
+                    el.text("An error occurred while saving data: " + textStatus + ' - ' + errorThrown)
+                    _this.find('button[type="submit"]').attr('disabled', false)
+                    _this.prepend(el)
+                    el.show('slow')
+                },
+                success: function(resp) {
+                    if (resp.status == 'success') {
+                        uni_modal("Your Queue", "get_queue.php?success=true&id=" + resp.id)
+                        $('#uni_modal').on('hide.bs.modal', function(e) {
+                            location.reload()
+                        })
+                    } else if (resp.status == 'failed' && !!resp.msg) {
+                        el.addClass('alert-' + resp.status)
+                        el.text(resp.msg)
+                        _this.prepend(el)
+                        el.show('slow')
+                    } else {
+                        el.addClass('alert-' + resp.status)
+                        el.text("An Error occurred.")
+                        _this.prepend(el)
+                        el.show('slow')
+                    }
+                    _this.find('button[type="submit"]').attr('disabled', false)
                 }
+            })
+        });
+
+        $('#scan-qr-btn').on('click', function() {
+            $('#qr-reader').toggle();
+            if ($('#qr-reader').is(':visible')) {
+                startQRScanner();
+            } else {
+                stopQRScanner();
+            }
+        });
+
+        var html5QrCode;
+
+        function startQRScanner() {
+            html5QrCode = new Html5Qrcode("qr-reader");
+            html5QrCode.start(
+                { facingMode: "environment" },
+                {
+                    fps: 10,
+                    qrbox: 250
+                },
+                (qrCodeMessage) => {
+                    decryptPhoneNumber(qrCodeMessage).then(decryptedPhoneNumber => {
+                        $('#phone_number').val(decryptedPhoneNumber);
+                        $('#qr-reader').hide();
+                        stopQRScanner();
+                        $('#phone_number').trigger('blur');
+                    }).catch(error => {
+                        console.error('Error decrypting phone number:', error);
+                    });
+                },
+                (errorMessage) => {
+                    // Parse error, ignore it.
+                }
+            ).catch((err) => {
+                console.log(err);
             });
         }
-    });
 
-    $('#queue-form').submit(function(e) {
-        e.preventDefault()
-        var _this = $(this)
-        _this.find('.pop-msg').remove()
-        var el = $('<div>')
-        el.addClass('alert pop-msg')
-        el.hide()
-        _this.find('button[type="submit"]').attr('disabled', true)
-        console.log('Form data:', _this.serialize());
-        $.ajax({
-            url: './Actions.php?a=save_queue',
-            method: 'POST',
-            data: _this.serialize(),
-            dataType: 'JSON',
-            error: function(jqXHR, textStatus, errorThrown) {
-                console.log('Error saving data:', textStatus, errorThrown)
-                el.addClass("alert-danger")
-                el.text("An error occurred while saving data: " + textStatus + ' - ' + errorThrown)
-                _this.find('button[type="submit"]').attr('disabled', false)
-                _this.prepend(el)
-                el.show('slow')
-            },
-            success: function(resp) {
-                // console.log('Response from save_queue:', resp);
-                if (resp.status == 'success') {
-                    uni_modal("Your Queue", "get_queue.php?success=true&id=" + resp.id)
-                    $('#uni_modal').on('hide.bs.modal', function(e) {
-                        location.reload()
-                    })
-                } else if (resp.status == 'failed' && !!resp.msg) {
-                    el.addClass('alert-' + resp.status)
-                    el.text(resp.msg)
-                    _this.prepend(el)
-                    el.show('slow')
-                } else {
-                    el.addClass('alert-' + resp.status)
-                    el.text("An Error occurred.")
-                    _this.prepend(el)
-                    el.show('slow')
-                }
-                _this.find('button[type="submit"]').attr('disabled', false)
+        function stopQRScanner() {
+            if (html5QrCode) {
+                html5QrCode.stop().then(ignore => {
+                    html5QrCode.clear();
+                }).catch(err => {
+                    console.log(err);
+                });
             }
-        })
-    })
-})
+        }
+
+        async function decryptPhoneNumber(encryptedPhoneNumber) {
+            let response = await fetch('decrypt_phone_number.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ encryptedPhoneNumber })
+            });
+
+            let result = await response.json();
+            if (result.status === 'success') {
+                return result.decryptedPhoneNumber;
+            } else {
+                throw new Error(result.message);
+            }
+        }
+    });
 </script>
+
 
 </body>
 

@@ -1,6 +1,7 @@
 <?php
 require_once('config.php');
 
+
 if (!is_dir(__DIR__ . '/db')) {
     mkdir(__DIR__ . '/db', 0777, true);
 }
@@ -94,6 +95,16 @@ class DBConnection extends SQLite3
         }
     }
 
+    public function encrypt_data($data) {
+        $iv = openssl_random_pseudo_bytes(openssl_cipher_iv_length('aes-256-cbc'));
+        $encrypted = openssl_encrypt($data, 'aes-256-cbc', $this->encryption_key, OPENSSL_RAW_DATA, $iv);
+    
+        if ($encrypted === false) {
+            return false; // Failed to encrypt
+        }
+    
+        return base64_encode($iv . $encrypted);
+    }
     public function decrypt_data($data)
     {
         $data = base64_decode($data);

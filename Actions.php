@@ -16,7 +16,7 @@ Class Actions extends DBConnection{
         parent::__destruct();
     }
 
-    private function encrypt_data($data) {
+    public function encrypt_data($data) {
         $iv = openssl_random_pseudo_bytes(openssl_cipher_iv_length('aes-256-cbc'));
         $encrypted = openssl_encrypt($data, 'aes-256-cbc', $this->encryption_key, OPENSSL_RAW_DATA, $iv);
     

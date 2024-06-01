@@ -1,5 +1,6 @@
 <?php
 require_once('./DBConnection.php');
+require_once('phpqrcode/qrlib.php');
 date_default_timezone_set('Asia/Colombo');
 
 // Generate the queue number
@@ -19,6 +20,16 @@ if (isset($_GET['id'])) {
 
         $customer_name = $conn->decrypt_data($customer_name);
         $phone_number = $conn->decrypt_data($phone_number);
+
+        // Generate QR code from encrypted phone number
+        $encryptedPhoneNumber = $conn->encrypt_data($phone_number);
+        $tempDir = './temp/'; // Directory to save the QR code image
+        $qrFileName = 'qrcode_' . md5($encryptedPhoneNumber) . '.png';
+        $qrFilePath = $tempDir . $qrFileName;
+
+        if (!file_exists($qrFilePath)) {
+            QRcode::png($encryptedPhoneNumber, $qrFilePath, QR_ECLEVEL_L, 4);
+        }
 
         // Get Patient History
         $patientHistory = $conn->getPatientHistory($phone_number, 5); // Limit to 5 entries
@@ -184,6 +195,18 @@ if (isset($_GET['id'])) {
             margin-top: 20px;
             gap: 2rem;
         }
+        .btn-outline-primary {
+        color: var(--primary-color);
+        background-color: transparent;
+        background-image: none;
+        border-color: var(--primary-color);
+    }
+
+    .btn-outline-primary:hover {
+        color: #fff;
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
 
         .btn {
             padding: 10px 20px;
@@ -192,7 +215,7 @@ if (isset($_GET['id'])) {
             border: none;
             border-radius: 5px;
             transition: background-color 0.3s ease;
-       
+
         }
 
         .btn-success {
@@ -216,9 +239,10 @@ if (isset($_GET['id'])) {
         .primaryColor {
             color: var(--primary-color);
         }
+
         .btn.btn-sm.rounded-0.btn-primary {
-    display: none;
-}
+            display: none;
+        }
 
         @media print {
             body * {
@@ -285,6 +309,7 @@ if (isset($_GET['id'])) {
                 <h2>National Institute of Infectious Diseases</h2>
                 <h4>ජාතික බෝවන රෝග විද්‍යායතනය</h4>
                 <p><strong>Patient Queue Token</strong></p>
+                <img src="<?php echo $qrFilePath; ?>" alt="QR Code" />
             </div>
             <div class="fs-1 fw-bold text-center text-info"><?php echo $queue ?></div>
             <center>
@@ -330,11 +355,23 @@ if (isset($_GET['id'])) {
             </div>
             <div class="btn-container">
                 <button class="btn btn-success" onclick="window.print()">Print</button>
+                <button class="btn btn-dark" onclick="printQR()">Print QR Only</button>
                 <a href="index.php" class="btn btn-dark">Home</a>
             </div>
         </div>
     </div>
 
+    <script>
+    function printQR() {
+        var qrCodeElement = document.querySelector('.bill-header img');
+        var newWindow = window.open('', '_blank');
+        newWindow.document.write('<html><head><title>Print QR Code</title></head><body>');
+        newWindow.document.write(qrCodeElement.outerHTML);
+        newWindow.document.write('</body></html>');
+        newWindow.document.close();
+        newWindow.print();
+    }
+</script>
 
     <script>
         $(function() {
