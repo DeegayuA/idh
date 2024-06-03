@@ -1,6 +1,8 @@
 <?php
-// Start the session
-session_start();
+// Start the session only if it hasn't been started already
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 // Set the session timeout duration in seconds
 $session_timeout = 1800; // 30 minutes
@@ -8,7 +10,7 @@ $session_timeout = 1800; // 30 minutes
 // Check if the user is logged in
 if (!isset($_SESSION['cashier_id']) || (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity']) > $session_timeout)) {
     // If not logged in or session expired, redirect to login page
-    header("Location:./login.php");
+    header("Location: ./login.php");
     exit;
 }
 
@@ -25,7 +27,7 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo ucwords(str_replace('_',' ',$page)) ?> | Patient Queuing System - Doctor View</title>
+    <title><?php echo ucwords(str_replace('_', ' ', $page)) ?> | Patient Queuing System - Doctor View</title>
     <link rel="stylesheet" href="./../Font-Awesome-master/css/all.min.css">
     <link rel="stylesheet" href="./../css/bootstrap.min.css">
     <link rel="stylesheet" href="./../select2/css/select2.min.css">
@@ -214,7 +216,7 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
         .modal-title {
             font-size: 1.5rem;
         }
-    </style>
+        </style>
 </head>
 <body>
     <main>
@@ -235,20 +237,23 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
         </nav>
         <div class="container py-3" id="page-container">
             <?php 
-                if(isset($_SESSION['flashdata'])):
+                if (isset($_SESSION['flashdata'])):
             ?>
             <div class="dynamic_alert alert alert-<?php echo $_SESSION['flashdata']['type'] ?>">
                 <div class="float-end"><a href="javascript:void(0)" class="text-dark text-decoration-none" onclick="$(this).closest('.dynamic_alert').hide('slow').remove()">x</a></div>
                 <?php echo $_SESSION['flashdata']['msg'] ?>
             </div>
-            <?php unset($_SESSION['flashdata']) ?>
+            <?php unset($_SESSION['flashdata']); ?>
             <?php endif; ?>
             <?php
-                $details = $conn->getPatientDetails($_GET['queue_id']);
-                if ($details):
+                // Check if queue_id exists before accessing it
+                if (isset($_GET['queue_id'])) {
+                    $details = $conn->getPatientDetails($_GET['queue_id']);
+                    if ($details):
+                        // Process and display patient details
+                    endif;
+                }
             ?>
-
-            <?php endif; ?>
             <?php
                 include $page.'.php';
             ?>
