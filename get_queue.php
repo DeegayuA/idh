@@ -167,11 +167,17 @@ if (isset($_GET['id'])) {
             border-collapse: collapse;
         }
 
-        .history-table th,
+        .history-table th{
+            border: 1px solid var(--text-color);
+            padding: 10px;
+            text-align: left;
+            white-space: wrap;
+        }
         .history-table td {
             border: 1px solid var(--text-color);
             padding: 10px;
             text-align: left;
+            white-space: nowrap;
         }
 
         .history-table th {
