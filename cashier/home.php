@@ -158,14 +158,14 @@ require_once('./../DBConnection.php');
 
 // // ESP32 device
 try {
-  var websocket = new WebSocket("ws://192.168.4.1:81/");
-  websocket.onopen = funsction(event) {
+    var esp32_websocket = new WebSocket("ws://192.168.4.1:81/");
+  esp32_websocket.onopen = function(event) {
       console.log('ESP Socket is open!');
   };
-  websocket.onclose = function(event) {
+  esp32_websocket.onclose = function(event) {
       console.log('ESP Socket has been closed!');
   };
-  websocket.onmessage = function(event) {
+  esp32_websocket.onmessage = function(event) {
       var message = JSON.parse(event.data);
       if (message.action === "next_queue") {
           get_queue();

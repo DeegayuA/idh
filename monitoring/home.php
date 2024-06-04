@@ -1,338 +1,436 @@
-<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-<style>
-  :root {
-    --background-color: #f8f9fa;
-    --text-color: #000000;
-    --card-background: #fff;
-    --primary-color: #4b79a1;
-    --primary-hover: #283e51;
-    --border-radius: 10px;
-    --box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    --font-family: 'Montserrat', sans-serif;
-  }
+<!DOCTYPE html>
+<html lang="en">
 
-  @media (prefers-color-scheme: dark) {
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Queue Monitor</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+  <style>
     :root {
-      --background-color: #121212;
-      --text-color: #ffffff;
-      --card-background: #272727;
+      --background-color: #f8f9fa;
+      --text-color: #000000;
+      --card-background: #fff;
       --primary-color: #4b79a1;
-      --primary-hover: #66a3d9;
+      --primary-hover: #283e51;
+      --border-radius: 10px;
+      --box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      --font-family: 'Montserrat', sans-serif;
     }
-  }
 
-  html,
-  body,
-  .container-fluid {
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    background: var(--background-color);
-    color: var(--text-color);
-    font-family: var(--font-family);
-  }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background-color: #121212;
+        --text-color: #ffffff;
+        --card-background: #272727;
+        --primary-color: #4b79a1;
+        --primary-hover: #66a3d9;
+      }
+    }
 
-  nav {
-    margin-bottom: 0;
-  }
+    :root {
+      --doctor-1-color: red;
+      --doctor-2-color: green;
+      --doctor-3-color: blue;
+      --doctor-4-color: yellow;
+      --doctor-5-color: purple;
+    }
 
-  #monitor-holder {
-    min-height: 100vh;
-    background-color: var(--background-color);
-  }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --doctor-1-color: darkred;
+        --doctor-2-color: darkgreen;
+        --doctor-3-color: darkblue;
+        --doctor-4-color: sienna;
+        --doctor-5-color: rebeccapurple;
+      }
+    }
 
-  .center {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
+    html,
+    body,
+    .container-fluid {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      background: var(--background-color);
+      color: var(--text-color);
+      font-family: var(--font-family);
+    }
 
-  .btn-primary {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
-    border-radius: var(--border-radius);
-    width: 100%;
-    padding: 10px;
-    font-size: 1rem;
-  }
+    nav {
+      margin-bottom: 0;
+    }
 
-  .btn-primary:hover {
-    background-color: var(--primary-hover);
-    border-color: var(--primary-hover);
-  }
+    #monitor-holder {
+      min-height: 100vh;
+      background-color: var(--background-color);
+    }
 
-  .card {
-    background: var(--card-background);
-    box-shadow: var(--box-shadow);
-    border-radius: var(--border-radius);
-  }
+    .center {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
 
-  .card-header {
-    background: var(--card-background);
-  }
+    .btn-primary {
+      background-color: var(--primary-color);
+      border-color: var(--primary-color);
+      border-radius: var(--border-radius);
+      width: 100%;
+      padding: 10px;
+      font-size: 1rem;
+    }
 
-  .list-group-item {
-    background: var(--card-background);
-    color: var(--text-color);
-    border: 1px solid var(--primary-color);
-    border-radius: 1rem;
-  }
+    .btn-primary:hover {
+      background-color: var(--primary-hover);
+      border-color: var(--primary-hover);
+    }
 
-  .fs-5,
-  .fs-4,
-  .fs-1 {
-    font-weight: bold;
-  }
+    .card {
+      background: var(--card-background);
+      box-shadow: var(--box-shadow);
+      border-radius: var(--border-radius);
+    }
 
-  hr {
-    color: var(--primary-color);
-  }
+    .card-header {
+      background: var(--card-background);
+    }
 
-  .text-center {
-    text-align: center;
-  }
+    .list-group-item {
+      top: 5px;
+      background: var(--card-background);
+      color: var(--text-color);
+      border: 2px solid var(--primary-color);
+      border-radius: 1rem;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      margin-top: 1rem;
+    }
 
-  .border-dark {
-    border-color: #000000 !important;
-  }
+    .list-group-item .cashier-name {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: var(--text-color);
+    }
 
-  .bg-dark {
-    background-color: #000000 !important;
-  }
+    .list-group-item .serve-queue {
+      font-size: 2rem;
+      color: var(--text-color);
+    }
 
-  .bg-gradient {
-    background-image: linear-gradient(45deg, #4b79a1, #283e51);
-  }
+    .fs-5,
+    .fs-4,
+    .fs-1 {
+      font-weight: bold;
+    }
 
-  #serving-field {
-    /* Default width for PC view */
-    flex: 1;
-    max-width: 25%;
-  }
+    hr {
+      color: var(--primary-color);
+    }
 
-  #action-field {
-    /* Default width for PC view */
-    flex: 3;
-    max-width: 75%;
-  }
+    .text-center {
+      text-align: center;
+    }
 
-  /* Tablet View */
-  @media (max-width: 992px) {
+    .border-dark {
+      border-color: #000000 !important;
+    }
+
+    .bg-dark {
+      background-color: #000000 !important;
+    }
+
+    .bg-gradient {
+      background-image: linear-gradient(45deg, #4b79a1, #283e51);
+    }
+
     #serving-field {
-      /* Adjust width for tablet view */
-      max-width: 40%;
+      flex: 1;
+      max-width: 25%;
     }
 
     #action-field {
-      /* Adjust width for tablet view */
-      max-width: 60%;
+      flex: 3;
+      max-width: 75%;
     }
-  }
 
-  /* Mobile View */
-  @media (max-width: 768px) {
-    #action-field {
-      /* Hide action field in mobile view */
-      display: none;
+    @media (max-width: 992px) {
+      #serving-field {
+        max-width: 40%;
+      }
+
+      #action-field {
+        max-width: 60%;
+      }
     }
-  }
-</style>
+
+    .doctor-room {
+      flex: auto auto auto;
+      width: 400px;
+      margin: 10px;
+      border-radius: 15px;
+      overflow: hidden;
+    }
+
+    .card-custom {
+      width: 100%;
+      max-width: 400px;
+      border-radius: 15px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    .list-group-item[data-id="1"] {
+    background-color: var(--doctor-1-color) !important;
+}
+
+.list-group-item[data-id="2"] {
+    background-color: var(--doctor-2-color) !important;
+}
+
+.list-group-item[data-id="3"] {
+    background-color: var(--doctor-3-color) !important;
+}
+
+.list-group-item[data-id="4"] {
+    background-color: var(--doctor-4-color) !important;
+}
+
+.list-group-item[data-id="5"] {
+    background-color: var(--doctor-5-color) !important;
+}
 
 
-<div class="container-fluid">
-  <div class="row justify-content-center">
-    <div class="col-md-6 text-center">
-      <button class="btn btn-lg btn-primary w-100 mt-5" id="start" type="button">Start Live Queue Monitor</button>
+
+    .doctor-room:hover .card-custom {
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .doctor-room .card-custom {
+      transition: box-shadow 0.3s ease;
+    }
+
+    @media (max-width: 768px) {
+      #action-field {
+        display: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container-fluid">
+    <div class="row justify-content-center">
+      <div class="col-md-6 text-center">
+        <button class="btn btn-lg btn-primary w-100 mt-5" id="start" type="button">Start Live Queue Monitor</button>
+      </div>
     </div>
-  </div>
-  <div class="border-dark border-3 border shadow d-none" id="monitor-holder">
-    <div class="row my-4 mx-0">
-      <div class="col-md-3 d-flex flex-column align-items-center justify-content-center border-end border-dark" id="serving-field">
-        <div class="card col-sm-12 shadow">
-          <div class="card-header">
-            <h5 class="card-title text-center">Now Serving</h5>
-          </div>
-          <div class="card-body p-0">
-            <div id="serving-list" class="list-group overflow-auto">
-              <?php
-              $cashier = $conn->query("SELECT * FROM `cashier_list` ORDER BY `name` ASC");
-              while ($row = $cashier->fetchArray()) :
-              ?>
-                <div class="list-group-item" data-id="<?php echo $row['cashier_id'] ?>" style="display:none">
-                  <div class="fs-5 fw-2 cashier-name border-bottom border-info"><?php echo $row['name'] ?></div>
-                  <div class="ps-4"><span class="serve-queue fs-4 fw-bold">1001 - John Smith</span></div>
-                </div>
-              <?php endwhile; ?>
+    <div class="border-dark border-3 border shadow d-none" id="monitor-holder">
+      <div class="row my-4 mx-0">
+        <div class="col-md-3 d-flex flex-column align-items-center justify-content-center border-end border-dark" id="serving-field">
+          <div class="card col-sm-12 shadow">
+            <div class="card-header">
+              <h5 class="card-title text-center">Now Serving</h5>
+            </div>
+            <div class="card-body p-0">
+              <div id="serving-list" class="list-group">
+                <?php
+                $cashier = $conn->query("SELECT * FROM `cashier_list` ORDER BY `name` ASC");
+                $i = 1; // Initialize a counter for the room data-id
+                while ($row = $cashier->fetchArray()) :
+                ?>
+                  <div class="list-group-item" data-id="<?php echo $row['cashier_id'] ?>" style="display:none">
+                    <div class="fs-5 fw-2 cashier-name border-bottom border-info"><?php echo $row['name'] ?></div>
+                    <div class="ps-4"><span class="serve-queue fs-4 fw-bold">1001 - John Smith</span></div>
+                    <div class="doctor-room mb-3 d-flex flex-column align-items-center center-content color-room" data-room="<?php echo $i; ?>">
+                    </div>
+                  </div>
+
+
+                  <?php $i++; // Increment the counter for each room 
+                  ?>
+                <?php endwhile; ?>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-      <div class="col-md-9 d-flex border-3 flex-column align-items-center justify-content-center bg-dark bg-gradient text-light" id="action-field">
-        <div class="col-auto flex-grow-1 center">
-          <?php
-          $vid = scandir('./../video');
-          $video = isset($vid[2]) ? $vid[2] : "";
-          ?>
-          <video id="loop-vid" src="./../video/<?php echo $video ?>" loop muted class="w-100 h-100"></video>
-        </div>
-        <div id="datetimefield" class="w-100 col-auto">
-          <div class="fs-1 text-center time fw-bold"></div>
-          <div class="fs-5 text-center date fw-bold"></div>
+        <div class="col-md-9 d-flex border-3 flex-column align-items-center justify-content-center bg-dark bg-gradient text-light" id="action-field">
+          <div class="col-auto flex-grow-1 center">
+            <?php
+            $vid = scandir('./../video');
+            $video = isset($vid[2]) ? $vid[2] : "";
+            ?>
+            <video id="loop-vid" src="./../video/<?php echo $video ?>" loop muted class="w-100 h-100"></video>
+          </div>
+          <div id="datetimefield" class="w-100 col-auto">
+            <div class="fs-1 text-center time fw-bold"></div>
+            <div class="fs-5 text-center date fw-bold"></div>
+          </div>
         </div>
       </div>
     </div>
   </div>
-</div>
 
-
-<script>
-  $(document).ready(() => {
-    const websocket = new WebSocket("ws://<?php echo $_SERVER['SERVER_NAME'] ?>:2306/queuing/php-sockets.php");
-    websocket.onopen = () => console.log('Socket is open!');
-    websocket.onclose = () => {
-      console.log('Socket has been closed!');
-      websocket = new WebSocket("ws://<?php echo $_SERVER['SERVER_NAME'] ?>:2306/queuing/php-sockets.php");
-    };
-
-    let in_queue = {};
-
-    const get_queue = () => {
-      $.ajax({
-        url: './../Actions.php?a=next_queue',
-        dataType: 'json',
-        error: err => console.log(err),
-        success: resp => {
-          if (resp.status) {
-            if (Object.keys(resp.data).length > 0) {
-              in_queue = resp.data;
-              update_queue_info(in_queue);
-            } else {
-              in_queue = {};
-              alert("No Queue Available");
-            }
-          } else {
-            alert('An error occurred');
-          }
-        }
-      });
-    };
-
-    const update_queue_info = queue_data => {
-      $('#queue').text(queue_data.queue || "----");
-      $('#customer_name').text(queue_data.customer_name || "Unknown");
-      $('#customer_age').text(queue_data.age || "N/A");
-      $('#customer_sex').text(queue_data.sex || "N/A");
-
-      websocket.send(JSON.stringify({
-        type: 'queue',
-        cashier_id: '<?php echo $_SESSION['cashier_id']; ?>', // Corrected this line
-        qid: queue_data.queue_id
-      }));
-    };
-
-
-    const speak = (text = "") => {
-      if (text == '') return false;
-      let tts = new SpeechSynthesisUtterance();
-      tts.lang = "en";
-      tts.voice = window.speechSynthesis.getVoices()[0];
-      tts.text = text;
-      let notif_audio = new Audio("./../audio/ascend.mp3");
-      notif_audio.muted = false;
-      notif_audio.autoplay = true;
-      document.body.appendChild(notif_audio);
-      notif_audio.play();
-      tts.onstart = () => $('#loop-vid')[0].pause();
-      setTimeout(() => {
-        window.speechSynthesis.speak(tts);
-        tts.onend = () => $('#loop-vid')[0].play();
-      }, 500);
-    };
-
-    const time_loop = () => {
-      const mos = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-      let datetime = new Date();
-      let hour = datetime.getHours();
-      let min = datetime.getMinutes();
-      let s = datetime.getSeconds();
-      let ampm = hour >= 12 ? "PM" : "AM";
-      let mo = mos[datetime.getMonth()];
-      let d = datetime.getDate();
-      let yr = datetime.getFullYear();
-      hour = hour >= 12 ? hour - 12 : hour;
-      hour = String(hour).padStart(2, '0');
-      min = String(min).padStart(2, '0');
-      s = String(s).padStart(2, '0');
-      $('.time').text(`${hour}:${min}:${s} ${ampm}`);
-      $('.date').text(`${mo} ${d}, ${yr}`);
-    };
-
-    const _resize_elements = () => {
-      let window_height = $(window).height();
-      let nav_height = $('nav').height();
-      let container_height = window_height - nav_height;
-      $('#serving-field,#action-field').height(container_height - 50);
-      $('#serving-list').height($('#serving-list').parent().height() - 30);
-    };
-
-    const new_queue = (cashier_id, qid) => {
-      $.ajax({
-        url: './../Actions.php?a=get_queue',
-        method: 'POST',
-        data: {
-          cashier_id,
-          qid
-        },
-        dataType: 'JSON',
-        error: err => console.log(err),
-        success: resp => {
-          if (resp.status === 'success') {
-            let item = $(`#serving-list .list-group-item[data-id="${cashier_id}"]`);
-            let cashier = item.find('.cashier-name').text();
-            let nitem = item.clone();
-            nitem.find('.serve-queue').text(`${resp.queue} - ${resp.name}`);
-            item.remove();
-            $('#serving-list').prepend(nitem);
-            if (resp.queue === '') {
-              nitem.hide('slow');
-            } else {
-              nitem.show('slow');
-              speak(`Queue Number ${Math.abs(resp.queue)} ${resp.name}, Please proceed to ${cashier}`);
-            }
-          }
-        }
-      });
-    };
-
-    const setup = () => {
-      setInterval(time_loop, 1000);
-      $(window).resize(_resize_elements);
-
-      websocket.onmessage = event => {
-        let Data = JSON.parse(event.data);
-        if (Data.type) {
-          if (Data.type === 'queue') {
-            new_queue(Data.cashier_id, Data.qid);
-          }
-          if (Data.type === 'test') {
-            speak("This is a sample notification.");
-          }
-        }
+  <script>
+    $(document).ready(() => {
+      let websocket = new WebSocket("ws://<?php echo $_SERVER['SERVER_NAME'] ?>:2306/queuing/php-sockets.php");
+      websocket.onopen = () => console.log('Socket is open!');
+      websocket.onclose = () => {
+        console.log('Socket has been closed!');
+        websocket = new WebSocket("ws://<?php echo $_SERVER['SERVER_NAME'] ?>:2306/queuing/php-sockets.php");
       };
-    };
 
-    const showMonitor = () => {
-      $('#start').hide();
-      $('#monitor-holder').removeClass('d-none');
-      _resize_elements();
-      $('#loop-vid')[0].play();
-    };
+      let in_queue = {};
 
-    $('#start').click(() => {
-      showMonitor();
+      const get_queue = () => {
+        $.ajax({
+          url: './../Actions.php?a=next_queue',
+          dataType: 'json',
+          error: err => console.log(err),
+          success: resp => {
+            if (resp.status) {
+              if (Object.keys(resp.data).length > 0) {
+                in_queue = resp.data;
+                update_queue_info(in_queue);
+              } else {
+                in_queue = {};
+                alert("No Queue Available");
+              }
+            } else {
+              alert('An error occurred');
+            }
+          }
+        });
+      };
+
+      const update_queue_info = queue_data => {
+        $('#queue').text(queue_data.queue || "----");
+        $('#customer_name').text(queue_data.customer_name || "Unknown");
+        $('#customer_age').text(queue_data.age || "N/A");
+        $('#customer_sex').text(queue_data.sex || "N/A");
+
+        websocket.send(JSON.stringify({
+          type: 'queue',
+          cashier_id: '<?php echo $_SESSION['cashier_id']; ?>',
+          qid: queue_data.queue_id
+        }));
+      };
+
+      const speak = (text = "") => {
+        if (text == '') return false;
+        let tts = new SpeechSynthesisUtterance();
+        tts.lang = "en";
+        tts.voice = window.speechSynthesis.getVoices()[0];
+        tts.text = text;
+        let notif_audio = new Audio("./../audio/ascend.mp3");
+        notif_audio.muted = false;
+        notif_audio.autoplay = true;
+        document.body.appendChild(notif_audio);
+        notif_audio.play();
+        tts.onstart = () => $('#loop-vid')[0].pause();
+        setTimeout(() => {
+          window.speechSynthesis.speak(tts);
+          tts.onend = () => $('#loop-vid')[0].play();
+        }, 500);
+      };
+
+      const time_loop = () => {
+        const mos = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        let datetime = new Date();
+        let hour = datetime.getHours();
+        let min = datetime.getMinutes();
+        let s = datetime.getSeconds();
+        let ampm = hour >= 12 ? "PM" : "AM";
+        let mo = mos[datetime.getMonth()];
+        let d = datetime.getDate();
+        let yr = datetime.getFullYear();
+        hour = hour >= 12 ? hour - 12 : hour;
+        hour = String(hour).padStart(2, '0');
+        min = String(min).padStart(2, '0');
+        s = String(s).padStart(2, '0');
+        $('.time').text(`${hour}:${min}:${s} ${ampm}`);
+        $('.date').text(`${mo} ${d}, ${yr}`);
+      };
+
+      const _resize_elements = () => {
+        let window_height = $(window).height();
+        let nav_height = $('nav').height();
+        let container_height = window_height - nav_height;
+        $('#serving-field,#action-field').height(container_height - 50);
+        $('#serving-list').height($('#serving-list').parent().height() - 30);
+      };
+
+      const new_queue = (cashier_id, qid) => {
+        $.ajax({
+          url: './../Actions.php?a=get_queue',
+          method: 'POST',
+          data: {
+            cashier_id,
+            qid
+          },
+          dataType: 'JSON',
+          error: err => console.log(err),
+          success: resp => {
+            if (resp.status === 'success') {
+              let item = $(`#serving-list .list-group-item[data-id="${cashier_id}"]`);
+              let cashier = item.find('.cashier-name').text();
+              let nitem = item.clone();
+              nitem.find('.serve-queue').text(`${resp.queue} - ${resp.name}`);
+              item.remove();
+              $('#serving-list').prepend(nitem);
+              if (resp.queue === '') {
+                nitem.hide('slow');
+              } else {
+                nitem.show('slow');
+                speak(`Queue Number ${Math.abs(resp.queue)} ${resp.name}, Please proceed to ${cashier}`);
+              }
+            }
+          }
+        });
+      };
+
+      const setup = () => {
+        setInterval(time_loop, 1000);
+        $(window).resize(_resize_elements);
+
+        websocket.onmessage = event => {
+          let Data = JSON.parse(event.data);
+          if (Data.type) {
+            if (Data.type === 'queue') {
+              new_queue(Data.cashier_id, Data.qid);
+            }
+            if (Data.type === 'test') {
+              speak("This is a sample notification.");
+            }
+
+            // Handle color room display based on id
+            if (Data.type === 'color') {
+              let room = $(`#color-room-${Data.id}`).closest('.card-custom');
+              room.show();
+            }
+          }
+        };
+
+
+      };
+
+      const showMonitor = () => {
+        $('#start').hide();
+        $('#monitor-holder').removeClass('d-none');
+        _resize_elements();
+        $('#loop-vid')[0].play();
+
+        // Hide all color rooms initially
+        $('.color-room').hide();
+      };
+
+      $('#start').click(() => {
+        showMonitor();
+      });
+
+      setup();
     });
+  </script>
 
-    setup();
-  });
-</script>
+</body>
+
+</html>

@@ -161,6 +161,8 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
                         <a href="./queue_registration.php">Home</a>
                         <span class="brakeline"> | </span>
                         <a href="./cashier">Doctors</a>
+                        <span class="brakeline"> | </span>
+                        <a href="./doctorlist/login.php">Doctor List</a>
                     </div>
                     <div class="pop_msg"></div>
                 </form>

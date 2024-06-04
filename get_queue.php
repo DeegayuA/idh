@@ -362,7 +362,7 @@ if (isset($_GET['id'])) {
             <div class="btn-container">
                 <button class="btn btn-success" onclick="window.print()">Print</button>
                 <button class="btn btn-dark" onclick="printQR()">Print QR Only</button>
-                <a href="index.php" class="btn btn-dark">Home</a>
+                <a href="./queue_registration.php" class="btn btn-dark">Home</a>
             </div>
         </div>
     </div>

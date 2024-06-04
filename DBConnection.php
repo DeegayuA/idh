@@ -47,6 +47,16 @@ class DBConnection extends SQLite3
             `date_created` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )");
 
+        $this->exec("CREATE TABLE IF NOT EXISTS `doctor_list` (
+        `doctor_id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        `fullname` TEXT NOT NULL,
+        `username` TEXT NOT NULL,
+        `password` TEXT NOT NULL,
+        `log_status` INTEGER NOT NULL DEFAULT 0,
+        `status` INTEGER NOT NULL Default 1,
+        `date_created` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
+
         $this->exec("CREATE TABLE IF NOT EXISTS `cashier_list` (
             `cashier_id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
             `name` TEXT NOT NULL,
@@ -66,6 +76,9 @@ class DBConnection extends SQLite3
         )");
 
         $this->exec("INSERT or IGNORE INTO `user_list` VALUES (1,'Administrator','admin',md5('admin123'),1, CURRENT_TIMESTAMP)");
+
+        $this->exec("INSERT or IGNORE INTO `doctor_list` VALUES (1,'Doctor','doc',md5('doc123'),0,1, CURRENT_TIMESTAMP)");
+        
     }
 
     private function openEncryptedDB($file, $key)
@@ -95,14 +108,15 @@ class DBConnection extends SQLite3
         }
     }
 
-    public function encrypt_data($data) {
+    public function encrypt_data($data)
+    {
         $iv = openssl_random_pseudo_bytes(openssl_cipher_iv_length('aes-256-cbc'));
         $encrypted = openssl_encrypt($data, 'aes-256-cbc', $this->encryption_key, OPENSSL_RAW_DATA, $iv);
-    
+
         if ($encrypted === false) {
             return false; // Failed to encrypt
         }
-    
+
         return base64_encode($iv . $encrypted);
     }
     public function decrypt_data($data)
@@ -123,6 +137,7 @@ class DBConnection extends SQLite3
 
         return $decrypted;
     }
+  
     public function getPatientHistory($phone_number, $limit)
     {
         // Step 1: Decrypt all mobile numbers from the database and store in JSON
@@ -143,32 +158,36 @@ class DBConnection extends SQLite3
             }
         }
     
-        // Step 3: Get exact matches from db 
-        $rows = [];
-        $exact_matchesCount = count($exact_matches);
+        // Step 3: Collect all matching entries
+        $all_rows = [];
         foreach ($exact_matches as $id => $exact_match) {
-            $result = $this->query("SELECT * FROM `queue_list` WHERE `queue_id` = '{$id}' ORDER BY `date_created` DESC LIMIT 5");
+            $result = $this->query("SELECT * FROM `queue_list` WHERE `queue_id` = '{$id}' ORDER BY `date_created` DESC");
             while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
                 $row['customer_name'] = $this->decrypt_data($row['customer_name']);
                 $row['phone_number'] = $this->decrypt_data($row['phone_number']);
-                $rows[] = $row;
-            }
-            // Check if the number of exact matches found exceeds 5
-            if (count($rows) >= $limit) {
-                break;
+                $all_rows[] = $row;
             }
         }
     
-        // Step 4: Destroy the JSON containing decrypted numbers
-        unset($decrypted_numbers_json);
+        // Step 4: Sort the collected rows by date_created in descending order
+        usort($all_rows, function ($a, $b) {
+            return strtotime($b['date_created']) - strtotime($a['date_created']);
+        });
+    
+        // Step 5: Remove the most recent entry
+        array_shift($all_rows);
+    
+        // Step 6: Limit the results to the specified number of entries
+        $rows = array_slice($all_rows, 0, $limit);
+    
+        // Step 7: Destroy the JSON containing decrypted numbers
+        unset($decrypted_numbers);
     
         return $rows;
     }
     
     
-    
-    
-    
+
 
 
     function generateQueueNumber()
