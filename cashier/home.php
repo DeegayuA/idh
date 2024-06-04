@@ -156,25 +156,29 @@ require_once('./../DBConnection.php');
     });
 
 
-
-    var websocket = new WebSocket("ws://192.168.4.1:81/");
-websocket.onopen = function(event) {
-    console.log('Socket is open!');
-};
-websocket.onclose = function(event) {
-    console.log('Socket has been closed!');
-};
-websocket.onmessage = function(event) {
-    var message = JSON.parse(event.data);
-    if (message.action === "next_queue") {
-        get_queue();
-    } else if (message.action === "notify") {
-        if (in_queue.queue) {
-            update_queue_info(in_queue);
-        } else {
-            alert("No Queue Available");
-        }
-    }
+// // ESP32 device
+try {
+  var websocket = new WebSocket("ws://192.168.4.1:81/");
+  websocket.onopen = funsction(event) {
+      console.log('ESP Socket is open!');
+  };
+  websocket.onclose = function(event) {
+      console.log('ESP Socket has been closed!');
+  };
+  websocket.onmessage = function(event) {
+      var message = JSON.parse(event.data);
+      if (message.action === "next_queue") {
+          get_queue();
+      } else if (message.action === "notify") {
+          if (in_queue.queue) {
+              update_queue_info(in_queue);
+          } else {
+              alert("No Queue Available");
+          }
+      }
+  };
+} catch(err) {
+  console.warn("ESP32 device not connected:", err);
 };
 
 </script>
