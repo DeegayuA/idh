@@ -106,6 +106,19 @@ require_once('./../DBConnection.php');
     };
     var in_queue = {};
 
+    websocket.onmessage = function(event) {
+        var message = JSON.parse(event.data);
+        if (message.action === "next_queue") {
+            get_queue();
+        } else if (message.action === "notify") {
+            if (in_queue.queue) {
+                update_queue_info(in_queue);
+            } else {
+                alert("No Queue Available");
+            }
+        }
+    };
+
     function get_queue() {
         $.ajax({
             url: './../Actions.php?a=next_queue',
