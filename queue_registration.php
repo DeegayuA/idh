@@ -3,8 +3,16 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 session_start();
 require_once('DBConnection.php');
-$page = isset($_GET['page']) ? $_GET['page'] : 'home';
+require_once('config.php');
+
+$conn = new DBConnection();
+$phone_number = isset($_POST['phone_number']) ? $_POST['phone_number'] : '';
+$nic = isset($_POST['nic']) ? $_POST['nic'] : '';
+$unique_person_id = isset($_POST['unique_person_id']) ? $_POST['unique_person_id'] : '';
+
 ?>
+
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -25,8 +33,8 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
     <script src="./Font-Awesome-master/js/all.min.js"></script>
     <script src="./select2/js/select2.min.js"></script>
     <script src="./js/script.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js" integrity="sha512-r6rDA7W6ZeQhvl8S7yRVQUKVHdexq+GAlNkNNqVC7YyIV+NwqCTJe2hDWCiffTyRNOeGEzRRJ9ifvRm/HCzGYg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>   
-     <style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js" integrity="sha512-r6rDA7W6ZeQhvl8S7yRVQUKVHdexq+GAlNkNNqVC7YyIV+NwqCTJe2hDWCiffTyRNOeGEzRRJ9ifvRm/HCzGYg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <style>
         :root {
             --background-color: #ffffff;
             --text-color: #000000;
@@ -96,10 +104,11 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
             border-color: var(--primary-hover);
         }
 
-        .btn-secondary{
+        .btn-secondary {
             background-color: var(--primary-color);
             border-color: var(--primary-color);
         }
+
         .btn-secondary:hover {
             background-color: var(--primary-hover);
             border-color: var(--primary-hover);
@@ -157,6 +166,21 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
             width: auto;
             margin: 10px;
         }
+
+        /* Custom styling for radio buttons */
+        /* Wrap radio buttons in rows */
+        #doctor-list {
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        /* Style for each radio button wrapper */
+        .form-check {
+            margin-right: 10px;
+            /* Adjust as needed */
+            margin-bottom: 10px;
+            /* Adjust as needed */
+        }
     </style>
 </head>
 
@@ -182,11 +206,19 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
             <div class="card-body">
                 <div class="h5 card-title">Get your Queue Number Here</div>
                 <form action="" id="queue-form">
+                    <input type="hidden" id="encrypted_unique_person_id" name="encrypted_unique_person_id">
+                    <div class="form-group mb-3">
+                        <label for="encrypted_id_number" class="control-label text-info2">Enter NIC/Passport Number</label>
+                        <div class="input-group">
+                            <input type="text" id="encrypted_id_number" name="encrypted_id_number" autocomplete="off" class="form-control form-control-lg rounded-0 border-0 border-bottom" required>
+                            <button type="button" class="btn btn-secondary" id="scan-qr-btn">Scan QR</button>
+                        </div>
+                    </div>
                     <div class="form-group mb-3">
                         <label for="phone_number" class="control-label text-info2">Enter Phone Number</label>
                         <div class="input-group">
                             <input type="text" id="phone_number" name="phone_number" autocomplete="off" class="form-control form-control-lg rounded-0 border-0 border-bottom" required>
-                            <button type="button" class="btn btn-secondary" id="scan-qr-btn">Scan QR</button>
+                            <!-- <button type="button" class="btn btn-secondary" id="scan-qr-btn">Scan QR</button> -->
                         </div>
                     </div>
                     <div id="qr-reader" style="width: 100%; display: none;"></div>
@@ -205,6 +237,13 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
                             <option value="Female">Female</option>
                         </select>
                     </div>
+                    <div class="form-group mb-3">
+                        <label class="control-label text-info2">Select Preferred Doctor</label>
+                        <div id="doctor-list">
+                            <!-- Doctor list will be dynamically populated here -->
+                        </div>
+                    </div>
+
 
                     <div class="form-group text-center my-2">
                         <button class="btn-primary btn-lg btn col-sm-4 rounded-0" type='submit'>Get Queue</button>
@@ -251,78 +290,137 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
             </div>
         </div>
     </div>
-   
+
     <script>
-    $(function() {
-        $('#phone_number').on('blur', function() {
-            var phoneNumber = $(this).val();
-            console.log('Phone number entered: ' + phoneNumber);
-            if (phoneNumber) {
-                $.ajax({
-                    url: 'fetch_patient_data.php',
-                    method: 'POST',
-                    data: { phone_number: phoneNumber },
-                    dataType: 'json',
-                    success: function(response) {
-                        if (response.status === 'success') {
-                            $('#customer_name').val(response.data.customer_name);
-                            $('#age').val(response.data.age);
-                            $('#sex').val(response.data.sex);
-                        }
-                    },
-                    error: function(jqXHR, textStatus, errorThrown) {
-                        console.log('Error fetching patient data:', textStatus, errorThrown);
-                        alert('Error fetching patient data: ' + textStatus + ' - ' + errorThrown);
-                    }
-                });
+    $(function () {
+        $('#phone_number, #encrypted_id_number').on('blur', function() {
+        var phoneNumber = $('#phone_number').val();
+        var nicNumber = $('#encrypted_id_number').val();
+
+        // // Check if both fields are non-empty
+        // if (phoneNumber && nicNumber) {
+        //     // Clear the phone number field to prioritize NIC/Passport number
+        //     $('#phone_number').val('');
+        // }
+
+        // Fetch patient data
+        fetchPatientData(phoneNumber, nicNumber);
+    });
+
+    // Function to fetch patient data
+    function fetchPatientData(phoneNumber, nicNumber, uniquePersonId = '') {
+        $.ajax({
+            url: 'fetch_patient_data.php',
+            method: 'POST',
+            data: {
+                phone_number: phoneNumber,
+                nic: nicNumber,
+                unique_person_id: uniquePersonId
+            },
+            dataType: 'json',
+            success: function(response) {
+                if (response.status === 'success') {
+                    var data = response.data;
+                    // Populate input fields with fetched data
+                    $('#customer_name').val(data.customer_name);
+                    $('#age').val(data.age);
+                    $('#sex').val(data.sex);
+                    $('#encrypted_unique_person_id').val(data.encrypted_unique_person_id);
+                    $('#encrypted_id_number').val(data.encrypted_id_number); 
+                    $('#phone_number').val(data.phone_number);
+                    // Add other fields to populate as necessary
+                } else if (response.status === 'not_found') {
+                    // If no match found, do nothing or provide feedback to the user
+                    // Example: $('#customer_name').val(''); // Clear the field
+                } else {
+                    // Handle other response statuses as needed
+                }
+            },
+            error: function(jqXHR, textStatus, errorThrown) {
+                console.log('Error fetching patient data:', textStatus, errorThrown);
+                alert('Error fetching patient data: ' + textStatus + ' - ' + errorThrown);
             }
         });
+    }
 
-        $('#queue-form').submit(function(e) {
-            e.preventDefault()
-            var _this = $(this)
-            _this.find('.pop-msg').remove()
-            var el = $('<div>')
-            el.addClass('alert pop-msg')
-            el.hide()
-            _this.find('button[type="submit"]').attr('disabled', true)
-            console.log('Form data:', _this.serialize());
+        function fetchActiveCashiers() {
+            $.ajax({
+                url: './Actions.php?a=get_active_cashiers',
+                method: 'GET',
+                dataType: 'JSON',
+                success: function (response) {
+                    if (response.status === 'success') {
+                        var cashiers = response.data;
+                        var doctorList = $('#doctor-list').empty();
+                        doctorList.append($('<input>').attr({
+                            type: 'radio',
+                            name: 'preferred_doctor',
+                            id: 'none',
+                            value: '0',
+                            checked: 'checked'
+                        }).add($('<label>').attr('for', 'none').text('None')));
+
+                        cashiers.forEach(function (cashier) {
+                            var radioBtn = $('<input>').attr({
+                                type: 'radio',
+                                name: 'preferred_doctor',
+                                id: 'doctor_' + cashier.cashier_id,
+                                value: cashier.cashier_id,
+                                class: 'form-check-input'
+                            });
+                            var label = $('<label>').attr('for', 'doctor_' + cashier.cashier_id).text(cashier.name);
+                            var wrapper = $('<div>').addClass('form-check').append(radioBtn).append(label);
+                            doctorList.append(wrapper);
+                        });
+                    } else {
+                        console.log('Error fetching active cashiers:', response.msg);
+                    }
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    console.log('Error fetching active cashiers:', textStatus, errorThrown);
+                }
+            });
+        }
+
+        $('#queue-form').submit(function (e) {
+            e.preventDefault();
+            var form = $(this);
+            form.find('.pop-msg').remove();
+            var el = $('<div>').addClass('alert pop-msg').hide();
+            form.find('button[type="submit"]').attr('disabled', true);
             $.ajax({
                 url: './Actions.php?a=save_queue',
                 method: 'POST',
-                data: _this.serialize(),
+                data: form.serialize(),
                 dataType: 'JSON',
-                error: function(jqXHR, textStatus, errorThrown) {
-                    console.log('Error saving data:', textStatus, errorThrown)
-                    el.addClass("alert-danger")
-                    el.text("An error occurred while saving data: " + textStatus + ' - ' + errorThrown)
-                    _this.find('button[type="submit"]').attr('disabled', false)
-                    _this.prepend(el)
-                    el.show('slow')
+                error: function (jqXHR, textStatus, errorThrown) {
+                    console.log('Error saving data:', textStatus, errorThrown);
+                    el.addClass('alert-danger').text("An error occurred while saving data: " + textStatus + ' - ' + errorThrown);
+                    form.find('button[type="submit"]').attr('disabled', false);
+                    form.prepend(el);
+                    el.show('slow');
                 },
-                success: function(resp) {
+                success: function (resp) {
                     if (resp.status == 'success') {
-                        uni_modal("Your Queue", "get_queue.php?success=true&id=" + resp.id)
-                        $('#uni_modal').on('hide.bs.modal', function(e) {
-                            location.reload()
-                        })
+                        uni_modal("Your Queue", "get_queue.php?success=true&id=" + resp.id);
+                        $('#uni_modal').on('hide.bs.modal', function (e) {
+                            location.reload();
+                        });
                     } else if (resp.status == 'failed' && !!resp.msg) {
-                        el.addClass('alert-' + resp.status)
-                        el.text(resp.msg)
-                        _this.prepend(el)
-                        el.show('slow')
+                        el.addClass('alert-' + resp.status).text(resp.msg);
+                        form.prepend(el);
+                        el.show('slow');
                     } else {
-                        el.addClass('alert-' + resp.status)
-                        el.text("An Error occurred.")
-                        _this.prepend(el)
-                        el.show('slow')
+                        el.addClass('alert-' + resp.status).text("An Error occurred.");
+                        form.prepend(el);
+                        el.show('slow');
                     }
-                    _this.find('button[type="submit"]').attr('disabled', false)
+                    form.find('button[type="submit"]').attr('disabled', false);
                 }
-            })
+            });
         });
 
-        $('#scan-qr-btn').on('click', function() {
+        $('#scan-qr-btn').on('click', function () {
             $('#qr-reader').toggle();
             if ($('#qr-reader').is(':visible')) {
                 startQRScanner();
@@ -335,58 +433,44 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
 
         function startQRScanner() {
             html5QrCode = new Html5Qrcode("qr-reader");
-            html5QrCode.start(
-                { facingMode: "environment" },
-                {
-                    fps: 10,
-                    qrbox: 250
-                },
-                (qrCodeMessage) => {
-                    decryptPhoneNumber(qrCodeMessage).then(decryptedPhoneNumber => {
-                        $('#phone_number').val(decryptedPhoneNumber);
-                        $('#qr-reader').hide();
-                        stopQRScanner();
-                        $('#phone_number').trigger('blur');
-                    }).catch(error => {
-                        console.error('Error decrypting phone number:', error);
-                    });
-                },
-                (errorMessage) => {
-                    // Parse error, ignore it.
+            html5QrCode.start({
+                facingMode: "environment"
+            }, {
+                fps: 10,
+                qrbox: 250
+            }, function (qrCodeMessage) {
+                // console.log('QR Code Message:', qrCodeMessage);
+                try {
+                    var qrData = JSON.parse(qrCodeMessage);
+                    console.log('Decoded QR Data:', qrData);
+                    fetchPatientData('', '', qrData.encrypted_unique_person_id);
+
+                    $('#qr-reader').hide();
+                    stopQRScanner();        
+                } catch (error) {
+                    console.log('Error parsing QR code message:', error);
                 }
-            ).catch((err) => {
-                console.log(err);
+            }, function (errorMessage) {
+                console.log('QR Code Error:', errorMessage);
             });
         }
 
         function stopQRScanner() {
             if (html5QrCode) {
-                html5QrCode.stop().then(ignore => {
+                html5QrCode.stop().then(function (ignore) {
                     html5QrCode.clear();
-                }).catch(err => {
+                }).catch(function (err) {
                     console.log(err);
                 });
             }
         }
 
-        async function decryptPhoneNumber(encryptedPhoneNumber) {
-            let response = await fetch('decrypt_phone_number.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ encryptedPhoneNumber })
-            });
-
-            let result = await response.json();
-            if (result.status === 'success') {
-                return result.decryptedPhoneNumber;
-            } else {
-                throw new Error(result.message);
-            }
-        }
+        // Call fetchActiveCashiers function on page load
+        fetchActiveCashiers();
     });
 </script>
+
+
 
 
 </body>

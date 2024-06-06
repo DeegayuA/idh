@@ -209,6 +209,20 @@ class Actions extends DBConnection
         return json_encode($resp);
     }
 
+    public function get_active_cashiers()
+    {
+        $sql = "SELECT * FROM `cashier_list` WHERE `status` = 1";
+        $qry = $this->query($sql);
+        $cashiers = [];
+        while ($row = $qry->fetchArray(SQLITE3_ASSOC)) {
+            $cashiers[] = $row;
+        }
+        $resp['status'] = 'success';
+        $resp['data'] = $cashiers;
+        return json_encode($resp);
+    }
+
+
 
 
     function delete_user()
@@ -350,22 +364,30 @@ class Actions extends DBConnection
                 break;
             }
         }
-
+    
         // Encrypt customer data before saving
         $encrypted_customer_name = $this->encrypt_data($_POST['customer_name']);
         $encrypted_phone_number = $this->encrypt_data($_POST['phone_number']);
-
-        $sql = "INSERT INTO `queue_list` (`queue`,`customer_name`, `age`, `sex`, `phone_number`) VALUES('{$code}', '{$encrypted_customer_name}', '{$_POST['age']}', '{$_POST['sex']}', '{$encrypted_phone_number}')";
+        $encrypted_id_number = $this->encrypt_data($_POST['encrypted_id_number']);
+        $encrypted_unique_person_id = $this->encrypt_data($_POST['encrypted_unique_person_id']);
+    
+        $preferred_doctor = isset($_POST['preferred_doctor']) ? $_POST['preferred_doctor'] : NULL;
+    
+        $sql = "INSERT INTO `queue_list` (`queue`,`customer_name`, `status`, `age`, `sex`, `phone_number`, `encrypted_id_number`, `encrypted_unique_person_id`, `preferred_doctor`) 
+                VALUES('{$code}', '{$encrypted_customer_name}', 0, '{$_POST['age']}', '{$_POST['sex']}', '{$encrypted_phone_number}', '{$encrypted_id_number}', '{$encrypted_unique_person_id}', '{$preferred_doctor}')";
+    
         $save = $this->query($sql);
         if ($save) {
             $resp['status'] = 'success';
-            $resp['id'] = $this->query("SELECT last_insert_rowid()")->fetchArray()[0];
+            $resp['id'] = $this->lastInsertRowID(); // Change this line
         } else {
             $resp['status'] = 'failed';
             $resp['msg'] = "An error occurred. Error: " . $this->lastErrorMsg();
         }
         return json_encode($resp);
     }
+    
+    
 
     function get_queue()
     {
@@ -510,6 +532,10 @@ switch ($a) {
     case 'update_video':
         echo $action->update_video();
         break;
+    case 'get_active_cashiers':
+        echo $action->get_active_cashiers();
+        break;
+
     default:
         // default action here
         break;

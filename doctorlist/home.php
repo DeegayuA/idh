@@ -145,27 +145,31 @@ require_once('./../DBConnection.php');
         websocket = new WebSocket("ws://<?php echo $_SERVER['SERVER_NAME'] ?>:2306/queuing/php-sockets.php");
     };
 
-    // **Changes: Define cashier IDs**
     var cashier_ids = [1, 2, 3, 4, 5];
-
     var in_queue = {};
 
     $(function() {
-        $('.next_queue').click(function() {
-            var doctorRoomNumber = $(this).attr('id').split('_')[2];
-            console.log('Next Queue Button Clicked for Doctor Room:', doctorRoomNumber);
-            get_queue(doctorRoomNumber);
-        });
+        // Handle click events for next buttons
+        for (var i = 1; i <= 5; i++) {
+            $('#next_queue_' + i).click(function() {
+                var doctorRoomNumber = $(this).attr('id').split('_')[2];
+                console.log('Next Queue Button Clicked for Doctor Room:', doctorRoomNumber);
+                get_queue(doctorRoomNumber);
+            });
+        }
 
-        $('.notify').click(function() {
-            var doctorRoomNumber = $(this).attr('id').split('_')[1];
-            console.log('Notify Button Clicked for Doctor Room:', doctorRoomNumber);
-            if (in_queue.queue) {
-                update_queue_info(in_queue, doctorRoomNumber);
-            } else {
-                alert("No Queue Available");
-            }
-        });
+        // Handle click events for notify buttons
+        for (var i = 1; i <= 5; i++) {
+            $('#notify_' + i).click(function() {
+                var doctorRoomNumber = $(this).attr('id').split('_')[1];
+                console.log('Notify Button Clicked for Doctor Room:', doctorRoomNumber);
+                if (in_queue.queue) {
+                    update_queue_info(in_queue, doctorRoomNumber);
+                } else {
+                    alert("No Queue Available");
+                }
+            });
+        }
     });
 
     function get_queue(doctorId) {
@@ -190,10 +194,7 @@ require_once('./../DBConnection.php');
         });
     }
 
-
-
     function update_queue_info(queue_data, doctorId) {
-        // **Changes: Construct element IDs using doctorId**
         var queueElementId = '#queue_' + doctorId;
         var customerNameElementId = '#customer_name_' + doctorId;
         var customerAgeElementId = '#customer_age_' + doctorId;
@@ -206,35 +207,46 @@ require_once('./../DBConnection.php');
 
         websocket.send(JSON.stringify({
             type: 'queue',
-            cashier_id: cashier_ids[doctorId - 1], // Access cashier ID using index
+            cashier_id: cashier_ids[doctorId - 1],
             qid: queue_data.queue_id
         }));
     }
-
-
-
-    // // // ESP32 device
-    // try {
-    //     var esp32_websocket = new WebSocket("ws://192.168.4.1:81/");
-    //   esp32_websocket.onopen = function(event) {
-    //       console.log('ESP Socket is open!');
-    //   };
-    //   esp32_websocket.onclose = function(event) {
-    //       console.log('ESP Socket has been closed!');
-    //   };
-    //   esp32_websocket.onmessage = function(event) {
-    //       var message = JSON.parse(event.data);
-    //       if (message.action === "next_queue") {
-    //           get_queue();
-    //       } else if (message.action === "notify") {
-    //           if (in_queue.queue) {
-    //               update_queue_info(in_queue);
-    //           } else {
-    //               alert("No Queue Available");
-    //           }
-    //       }
-    //   };
-    // } catch(err) {
-    //   console.warn("ESP32 device not connected:", err);
-    // };
+</script>
+<script>
+        try {
+            var esp32_websocket = new WebSocket("ws://192.168.4.1:82/");
+            esp32_websocket.onopen = function(event) {
+                console.log('ESP Socket is open!');
+            };
+            esp32_websocket.onclose = function(event) {
+                console.log('ESP Socket has been closed!');
+            };
+            esp32_websocket.onmessage = function(event) {
+                var message = JSON.parse(event.data);
+                if (message.action === "next_queue") {
+                    var doctorRoomNumber = message.room;
+                    console.log('Next Queue Button Clicked for Doctor Room:', doctorRoomNumber);
+                    get_queue(doctorRoomNumber);
+                    // Add delivery report arrow symbol
+                    var deliveryReport = document.createElement('span');
+                    deliveryReport.innerHTML = ' &#8594;'; // Right arrow symbol
+                    document.body.appendChild(deliveryReport);
+                } else if (message.action === "notify") {
+                    var doctorRoomNumber = message.room;
+                    console.log('Notify Button Double Clicked for Doctor Room:', doctorRoomNumber);
+                    // Perform action for double press, e.g., updating queue info
+                    if (in_queue.queue) {
+                        update_queue_info(in_queue, doctorRoomNumber);
+                    } else {
+                        alert("No Queue Available");
+                    }
+                    // Add delivery report arrow symbol
+                    var deliveryReport = document.createElement('span');
+                    deliveryReport.innerHTML = ' →'; // Right arrow symbol
+                    document.body.appendChild(deliveryReport);
+                }
+            };
+        } catch (err) {
+            console.warn("ESP32 device not connected:", err);
+        };
 </script>

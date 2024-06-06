@@ -48,14 +48,14 @@ class DBConnection extends SQLite3
         )");
 
         $this->exec("CREATE TABLE IF NOT EXISTS `doctor_list` (
-        `doctor_id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-        `fullname` TEXT NOT NULL,
-        `username` TEXT NOT NULL,
-        `password` TEXT NOT NULL,
-        `log_status` INTEGER NOT NULL DEFAULT 0,
-        `status` INTEGER NOT NULL Default 1,
-        `date_created` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )");
+            `doctor_id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            `fullname` TEXT NOT NULL,
+            `username` TEXT NOT NULL,
+            `password` TEXT NOT NULL,
+            `log_status` INTEGER NOT NULL DEFAULT 0,
+            `status` INTEGER NOT NULL Default 1,
+            `date_created` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )");
 
         $this->exec("CREATE TABLE IF NOT EXISTS `cashier_list` (
             `cashier_id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
@@ -72,13 +72,28 @@ class DBConnection extends SQLite3
             `date_created` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             `age` INTEGER,
             `sex` TEXT,
-            `phone_number` TEXT
+            `phone_number` TEXT,
+            `encrypted_id_number` TEXT,
+            `encrypted_unique_person_id` TEXT UNIQUE,
+            `preferred_doctor` INTEGER DEFAULT NULL
         )");
+
+
 
         $this->exec("INSERT or IGNORE INTO `user_list` VALUES (1,'Administrator','admin',md5('admin123'),1, CURRENT_TIMESTAMP)");
 
         $this->exec("INSERT or IGNORE INTO `doctor_list` VALUES (1,'Doctor','doc',md5('doc123'),0,1, CURRENT_TIMESTAMP)");
-        
+        // doctor_Rooms_5
+        $startRoom = 101;
+        $totalRooms = 5;
+
+        // Loop through the rooms and insert records
+        for ($i = 0; $i < $totalRooms; $i++) {
+            $roomNumber = $startRoom + $i;
+            $roomName = 'Room' . ($i + 1); // Assuming room names follow this pattern
+            // Insert the record into the cashier_list table
+            $this->exec("INSERT or IGNORE INTO `cashier_list` VALUES ($roomNumber, '$roomName', 0, 1)");
+        }
     }
 
     private function openEncryptedDB($file, $key)
@@ -137,27 +152,34 @@ class DBConnection extends SQLite3
 
         return $decrypted;
     }
-  
-    public function getPatientHistory($phone_number, $limit)
+
+    public function getPatientHistory($identifier, $limit)
     {
-        // Step 1: Decrypt all mobile numbers from the database and store in JSON
-        $decrypted_numbers = [];
-        $result = $this->query("SELECT queue_id, phone_number FROM `queue_list`");
+        // Step 1: Decrypt all mobile numbers and NIC numbers from the database and store in JSON
+        $decrypted_identifiers = [];
+        $result = $this->query("SELECT queue_id, phone_number, encrypted_id_number FROM `queue_list`");
         while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
-            $decrypted_number = $this->decrypt_data($row['phone_number']);
-            if ($decrypted_number !== false) {
-                $decrypted_numbers[$row['queue_id']] = $decrypted_number;
+            $decrypted_phone_number = $this->decrypt_data($row['phone_number']);
+            $decrypted_id_number = $this->decrypt_data($row['encrypted_id_number']);
+
+            if ($decrypted_phone_number !== false) {
+                $decrypted_identifiers[$row['queue_id']] = $decrypted_phone_number;
+            }
+
+            if ($decrypted_id_number !== false) {
+                $decrypted_identifiers[$row['queue_id']] = $decrypted_id_number;
             }
         }
-    
-        // Step 2: Find exact matches of the entered phone number
+
+
+        // Step 2: Find exact matches of the entered identifier
         $exact_matches = [];
-        foreach ($decrypted_numbers as $id => $decrypted_number) {
-            if ($decrypted_number === $phone_number) {
-                $exact_matches[$id] = $decrypted_number;
+        foreach ($decrypted_identifiers as $id => $decrypted_identifier) {
+            if ($decrypted_identifier === $identifier) {
+                $exact_matches[$id] = $decrypted_identifier;
             }
         }
-    
+
         // Step 3: Collect all matching entries
         $all_rows = [];
         foreach ($exact_matches as $id => $exact_match) {
@@ -165,28 +187,57 @@ class DBConnection extends SQLite3
             while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
                 $row['customer_name'] = $this->decrypt_data($row['customer_name']);
                 $row['phone_number'] = $this->decrypt_data($row['phone_number']);
+                $row['encrypted_id_number'] = $this->decrypt_data($row['encrypted_id_number']);
+
                 $all_rows[] = $row;
             }
         }
-    
+
         // Step 4: Sort the collected rows by date_created in descending order
         usort($all_rows, function ($a, $b) {
             return strtotime($b['date_created']) - strtotime($a['date_created']);
         });
-    
+
         // Step 5: Remove the most recent entry
         array_shift($all_rows);
-    
+
         // Step 6: Limit the results to the specified number of entries
         $rows = array_slice($all_rows, 0, $limit);
-    
-        // Step 7: Destroy the JSON containing decrypted numbers
-        unset($decrypted_numbers);
-    
+
+        // Step 7: Destroy the JSON containing decrypted identifiers
+        unset($decrypted_identifiers);
+
         return $rows;
     }
+
+    public function getPatientDataByUniquePersonID($unique_person_id)
+    {
+        // Add "=" to the end of the unique_person_id if it's missing
+        if (substr($unique_person_id, -1) !== '=') {
+            $unique_person_id .= '=';
+        }
     
+        // Step 1: Fetch all data associated with the provided unique_person_id
+        $all_rows = [];
+        $result = $this->query("SELECT * FROM `queue_list` WHERE `encrypted_unique_person_id` = '{$unique_person_id}' ORDER BY `date_created` DESC");
+        while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+            // Decrypt encrypted fields
+            $row['customer_name'] = $this->decrypt_data($row['customer_name']);
+            $row['phone_number'] = $this->decrypt_data($row['phone_number']);
+            $row['encrypted_id_number'] = $this->decrypt_data($row['encrypted_id_number']); // Decrypt encrypted ID number
+            $all_rows[] = $row;
+        }
     
+        // Step 2: Sort the collected rows by date_created in descending order
+        usort($all_rows, function ($a, $b) {
+            return strtotime($b['date_created']) - strtotime($a['date_created']);
+        });
+    
+        return $all_rows;
+    }
+    
+
+
 
 
 

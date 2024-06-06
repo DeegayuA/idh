@@ -1,12 +1,20 @@
 <?php
-require_once('./DBConnection.php');
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+session_start();
+require_once('DBConnection.php');
+require_once('config.php');
 require_once('phpqrcode/qrlib.php');
 date_default_timezone_set('Asia/Colombo');
+
 
 // Generate the queue number
 $queue = $conn->generateQueueNumber();
 
-// Get the patient details if an ID is provided
+// Initialize an array to hold all the data for encoding
+$dataToEncode = array();
+
+
 if (isset($_GET['id'])) {
     $qry = $conn->query("SELECT * FROM `queue_list` WHERE `queue_id` = '{$_GET['id']}'");
     @$res = $qry->fetchArray();
@@ -20,22 +28,30 @@ if (isset($_GET['id'])) {
 
         $customer_name = $conn->decrypt_data($customer_name);
         $phone_number = $conn->decrypt_data($phone_number);
+        $nic = $conn->decrypt_data($encrypted_id_number);
 
-        // Generate QR code from encrypted phone number
-        $encryptedPhoneNumber = $conn->encrypt_data($phone_number);
+        $dataToEncode = array(
+            'encrypted_unique_person_id' => $conn->encrypt_data($encrypted_unique_person_id),
+        );
+
+        // Generate the QR code data by encoding the array as JSON
+        $qrCodeData = json_encode($dataToEncode);
+
+        // Generate the QR code file path based on the MD5 hash of the QR code data
         $tempDir = './temp/'; // Directory to save the QR code image
-        $qrFileName = 'qrcode_' . md5($encryptedPhoneNumber) . '.png';
+        $qrFileName = 'qrcode_' . md5($qrCodeData) . '.png';
         $qrFilePath = $tempDir . $qrFileName;
 
+        // Check if the QR code file already exists, if not generate a new one
         if (!file_exists($qrFilePath)) {
-            QRcode::png($encryptedPhoneNumber, $qrFilePath, QR_ECLEVEL_L, 4);
+            QRcode::png($qrCodeData, $qrFilePath, QR_ECLEVEL_L, 4);
         }
 
-        // Get Patient History
-        $patientHistory = $conn->getPatientHistory($phone_number, 5); // Limit to 5 entries
+        // Get Patient History based on phone number or NIC
+        $patientHistory = $conn->getPatientHistory($phone_number ?? $nic, 5); // Limit to 5 entries
 
         // Calculate Estimated Waiting Time
-        $qry = $conn->query("SELECT COUNT(*) as count FROM `queue_list` WHERE `status` = 0 AND strftime('%Y-%m-%d', `date_created`) = strftime('%Y-%m-%d', 'now') LIMIT 5");
+        $qry = $conn->query("SELECT COUNT(*) as count FROM `queue_list` WHERE `status` = 0 AND strftime('%Y-%m-%d', `date_created`) = strftime('%Y-%m-%d', 'now')");
         $row = $qry->fetchArray();
         $queuedPatients = $row['count']; // Number of patients in the queue with status = 0
         $estimatedWaitSeconds = $queuedPatients * 5 * 60; // Each patient takes approximately 5 minutes, converted to seconds
@@ -43,6 +59,11 @@ if (isset($_GET['id'])) {
     }
 }
 ?>
+
+
+
+
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -167,12 +188,13 @@ if (isset($_GET['id'])) {
             border-collapse: collapse;
         }
 
-        .history-table th{
+        .history-table th {
             border: 1px solid var(--text-color);
             padding: 10px;
             text-align: left;
             white-space: wrap;
         }
+
         .history-table td {
             border: 1px solid var(--text-color);
             padding: 10px;
@@ -201,18 +223,19 @@ if (isset($_GET['id'])) {
             margin-top: 20px;
             gap: 2rem;
         }
-        .btn-outline-primary {
-        color: var(--primary-color);
-        background-color: transparent;
-        background-image: none;
-        border-color: var(--primary-color);
-    }
 
-    .btn-outline-primary:hover {
-        color: #fff;
-        background-color: var(--primary-color);
-        border-color: var(--primary-color);
-    }
+        .btn-outline-primary {
+            color: var(--primary-color);
+            background-color: transparent;
+            background-image: none;
+            border-color: var(--primary-color);
+        }
+
+        .btn-outline-primary:hover {
+            color: #fff;
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
 
         .btn {
             padding: 10px 20px;
@@ -221,7 +244,6 @@ if (isset($_GET['id'])) {
             border: none;
             border-radius: 5px;
             transition: background-color 0.3s ease;
-
         }
 
         .btn-success {
@@ -302,8 +324,6 @@ if (isset($_GET['id'])) {
                 margin: 0;
                 padding: 0;
             }
-
-
         }
     </style>
 </head>
@@ -368,16 +388,16 @@ if (isset($_GET['id'])) {
     </div>
 
     <script>
-    function printQR() {
-        var qrCodeElement = document.querySelector('.bill-header img');
-        var newWindow = window.open('', '_blank');
-        newWindow.document.write('<html><head><title>Print QR Code</title></head><body>');
-        newWindow.document.write(qrCodeElement.outerHTML);
-        newWindow.document.write('</body></html>');
-        newWindow.document.close();
-        newWindow.print();
-    }
-</script>
+        function printQR() {
+            var qrCodeElement = document.querySelector('.bill-header img');
+            var newWindow = window.open('', '_blank');
+            newWindow.document.write('<html><head><title>Print QR Code</title></head><body>');
+            newWindow.document.write(qrCodeElement.outerHTML);
+            newWindow.document.write('</body></html>');
+            newWindow.document.close();
+            newWindow.print();
+        }
+    </script>
 
     <script>
         $(function() {
