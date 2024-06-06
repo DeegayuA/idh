@@ -369,9 +369,11 @@ class Actions extends DBConnection
         $encrypted_customer_name = $this->encrypt_data($_POST['customer_name']);
         $encrypted_phone_number = $this->encrypt_data($_POST['phone_number']);
         $encrypted_id_number = $this->encrypt_data($_POST['encrypted_id_number']);
-        $encrypted_unique_person_id = $this->encrypt_data($_POST['encrypted_unique_person_id']);
     
         $preferred_doctor = isset($_POST['preferred_doctor']) ? $_POST['preferred_doctor'] : NULL;
+
+        // Generate the encrypted_unique_person_id
+        $encrypted_unique_person_id = $this->encrypt_data($_POST['customer_name'] . $_POST['sex'] . $_POST['encrypted_id_number'] . $_POST['phone_number']);
     
         $sql = "INSERT INTO `queue_list` (`queue`,`customer_name`, `status`, `age`, `sex`, `phone_number`, `encrypted_id_number`, `encrypted_unique_person_id`, `preferred_doctor`) 
                 VALUES('{$code}', '{$encrypted_customer_name}', 0, '{$_POST['age']}', '{$_POST['sex']}', '{$encrypted_phone_number}', '{$encrypted_id_number}', '{$encrypted_unique_person_id}', '{$preferred_doctor}')";

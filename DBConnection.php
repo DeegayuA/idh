@@ -34,7 +34,7 @@ class DBConnection extends SQLite3
         }
 
         // Open the database with encryption
-        $this->openEncryptedDB(DB_FILE, 'my_secret_key');
+        $this->openEncryptedDB(DB_FILE, 'DeE@2oo1');
         $this->createFunction('md5', 'my_udf_md5');
         $this->exec("PRAGMA foreign_keys = ON;");
 
@@ -74,9 +74,18 @@ class DBConnection extends SQLite3
             `sex` TEXT,
             `phone_number` TEXT,
             `encrypted_id_number` TEXT,
-            `encrypted_unique_person_id` TEXT UNIQUE,
+            `encrypted_unique_person_id` TEXT,
             `preferred_doctor` INTEGER DEFAULT NULL
         )");
+
+        $this->exec("CREATE TABLE IF NOT EXISTS `qrcode_list` (
+            `qr_id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            `encrypted_unique_person_id` TEXT NOT NULL,
+            `file_name` TEXT NOT NULL,
+            `date_created` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            `last_scanned_datetime` TIMESTAMP
+        )");
+        
 
 
 
@@ -210,12 +219,10 @@ class DBConnection extends SQLite3
         return $rows;
     }
 
+
     public function getPatientDataByUniquePersonID($unique_person_id)
     {
-        // Add "=" to the end of the unique_person_id if it's missing
-        if (substr($unique_person_id, -1) !== '=') {
-            $unique_person_id .= '=';
-        }
+
     
         // Step 1: Fetch all data associated with the provided unique_person_id
         $all_rows = [];
@@ -237,9 +244,129 @@ class DBConnection extends SQLite3
     }
     
 
+    public function fillQRCodeList($encrypted_unique_person_id, $qrFileName)
+    {
+        // Get the current date and time
+        $currentDateTime = date("Y-m-d H:i:s");
 
+        // Insert data into the qrcode_list table
+        $sql = "INSERT INTO `qrcode_list` (`encrypted_unique_person_id`, `file_name`, `date_created`) 
+                VALUES ('$encrypted_unique_person_id', '$qrFileName', '$currentDateTime')";
+        
+        $result = $this->exec($sql);
 
+        // Check if the insertion was successful
+        if ($result) {
+            return true; // Success
+        } else {
+            return false; // Failed to insert
+        }
+    }
 
+    public function searchByQRCodeFileName($encrypted_unique_person_id)
+    {
+        // Step 1: Decrypt all encrypted_unique_person_id values from the database and store them in an array
+        $decryptedIds = [];
+        $result = $this->query("SELECT encrypted_unique_person_id FROM `qrcode_list` ORDER BY `date_created` ASC");
+        while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+            $decryptedId = $this->decrypt_data($row['encrypted_unique_person_id']);
+          
+            if ($decryptedId !== false) {
+                $decryptedIds[] = $decryptedId;
+            }
+        }
+    
+        // Step 2: Decrypt the provided encrypted_unique_person_id parameter
+        $decrypted_param = $this->decrypt_data($encrypted_unique_person_id);
+    
+        // Step 3: Find the first matching decrypted parameter
+        $matchingId = null;
+        foreach ($decryptedIds as $id) {
+            if ($id === $decrypted_param) {
+                $matchingId = $id;
+                echo $matchingId;
+                break;
+            }
+        }
+    
+        // Step 4: If a matching ID is found, retrieve the corresponding row from the database
+        if ($matchingId !== null) {
+            $sql = "SELECT file_name FROM `qrcode_list` WHERE `encrypted_unique_person_id` = :encrypted_unique_person_id ORDER BY `date_created` ASC LIMIT 1";
+            $stmt = $this->prepare($sql);
+            $stmt->bindValue(':encrypted_unique_person_id', $encrypted_unique_person_id, SQLITE3_TEXT);
+            $result = $stmt->execute();
+            $row = $result->fetchArray(SQLITE3_ASSOC);
+            if ($row !== false) {
+                // Debugging: Output the retrieved file name
+                echo "Retrieved File Name: " . $row['file_name'];
+                return $row['file_name'];
+            }
+        }
+    
+        // Step 5: If no matching row was found, return null
+        // Debugging: Output a message indicating no matching row was found
+        echo "No matching row found for encrypted_unique_person_id: " . $encrypted_unique_person_id;
+        return null;
+    }
+    
+    
+
+    public function checkDecryptedUniquePersonIDExists($encrypted_unique_person_id)
+{
+    // Decrypt the provided encrypted_unique_person_id
+    $decrypted_unique_person_id = $this->decrypt_data($encrypted_unique_person_id);
+    
+    // Prepare the SQL statement to check if the decrypted_unique_person_id exists in the qrcode_list
+    $sql = "SELECT COUNT(*) AS count FROM `qrcode_list` WHERE `encrypted_unique_person_id` = :decrypted_unique_person_id";
+    
+    // Prepare the statement
+    $stmt = $this->prepare($sql);
+    $stmt->bindValue(':decrypted_unique_person_id', $decrypted_unique_person_id, SQLITE3_TEXT);
+    
+    // Execute the statement
+    $result = $stmt->execute();
+    
+    // Fetch the row
+    $row = $result->fetchArray(SQLITE3_ASSOC);
+    
+    // Check if a matching row was found
+    if ($row['count'] > 0) {
+        return true; // Return true if the decrypted_unique_person_id exists
+    } else {
+        return false; // Return false if the decrypted_unique_person_id does not exist
+    }
+}
+
+    
+
+    public function updateLastScannedDatetime($encrypted_unique_person_id)
+    {
+
+        // Get the current date and time with the specified timezone
+        $timezone = new DateTimeZone(tZone); // Use the defined timezone
+        $currentDateTime = new DateTime('now', $timezone);
+        $formattedDateTime = $currentDateTime->format('Y-m-d H:i:s');
+    
+        // Prepare the SQL statement
+        $sql = "UPDATE qrcode_list SET last_scanned_datetime = :currentDateTime WHERE encrypted_unique_person_id = :encrypted_unique_person_id";
+    
+        // Prepare the statement
+        $stmt = $this->prepare($sql);
+    
+        // Bind parameters
+        $stmt->bindValue(':currentDateTime', $formattedDateTime, SQLITE3_TEXT);
+        $stmt->bindValue(':encrypted_unique_person_id', $encrypted_unique_person_id, SQLITE3_TEXT);
+    
+        // Execute the statement
+        $result = $stmt->execute();
+    
+        // Check if the update was successful
+        if ($result) {
+            return true; // Success
+        } else {
+            return false; // Failed to update
+        }
+    }
 
     function generateQueueNumber()
     {
@@ -266,3 +393,7 @@ class DBConnection extends SQLite3
 }
 
 $conn = new DBConnection();
+
+
+?>
+

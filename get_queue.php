@@ -1,65 +1,64 @@
 <?php
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+// Start session and include necessary files
 session_start();
 require_once('DBConnection.php');
-require_once('config.php');
 require_once('phpqrcode/qrlib.php');
 date_default_timezone_set('Asia/Colombo');
-
 
 // Generate the queue number
 $queue = $conn->generateQueueNumber();
 
-// Initialize an array to hold all the data for encoding
-$dataToEncode = array();
-
+// Initialize an array to hold data for encoding
+$dataToEncode = [];
 
 if (isset($_GET['id'])) {
-    $qry = $conn->query("SELECT * FROM `queue_list` WHERE `queue_id` = '{$_GET['id']}'");
-    @$res = $qry->fetchArray();
+    $queueId = $_GET['id'];
+    $res = $conn->query("SELECT * FROM `queue_list` WHERE `queue_id` = '$queueId'")->fetchArray();
 
     if ($res) {
+        // Extract data from the result
         foreach ($res as $k => $v) {
             if (!is_numeric($k)) {
                 $$k = $v;
             }
         }
 
+        // Decrypt data if needed
         $customer_name = $conn->decrypt_data($customer_name);
         $phone_number = $conn->decrypt_data($phone_number);
         $nic = $conn->decrypt_data($encrypted_id_number);
 
-        $dataToEncode = array(
-            'encrypted_unique_person_id' => $conn->encrypt_data($encrypted_unique_person_id),
-        );
+        // Check if the QR code file already exists in the database
+        $existingQRFileName = $conn->searchByQRCodeFileName($encrypted_unique_person_id);
 
-        // Generate the QR code data by encoding the array as JSON
-        $qrCodeData = json_encode($dataToEncode);
+        // If the QR code file exists, use it, otherwise generate a new one
+        if ($existingQRFileName) {
+            // Output the QR code file name
+            $qrFileName = $existingQRFileName;
+        } else {
+            // Generate QR code data and file name
+            $dataToEncode = ['encrypted_unique_person_id' => $encrypted_unique_person_id];
+            $qrCodeData = json_encode($dataToEncode);
+            $qrFileName = 'qrcode_' . $encrypted_unique_person_id . '.png';
+            $qrFilePath = './temp/' . $qrFileName;
 
-        // Generate the QR code file path based on the MD5 hash of the QR code data
-        $tempDir = './temp/'; // Directory to save the QR code image
-        $qrFileName = 'qrcode_' . md5($qrCodeData) . '.png';
-        $qrFilePath = $tempDir . $qrFileName;
-
-        // Check if the QR code file already exists, if not generate a new one
-        if (!file_exists($qrFilePath)) {
-            QRcode::png($qrCodeData, $qrFilePath, QR_ECLEVEL_L, 4);
+            // Generate QR code and store it in the database
+            QRcode::png($qrCodeData, $qrFilePath, QR_ECLEVEL_H, 4);
+            $conn->fillQRCodeList($encrypted_unique_person_id, $qrFileName);
         }
 
         // Get Patient History based on phone number or NIC
         $patientHistory = $conn->getPatientHistory($phone_number ?? $nic, 5); // Limit to 5 entries
 
-        // Calculate Estimated Waiting Time
-        $qry = $conn->query("SELECT COUNT(*) as count FROM `queue_list` WHERE `status` = 0 AND strftime('%Y-%m-%d', `date_created`) = strftime('%Y-%m-%d', 'now')");
-        $row = $qry->fetchArray();
-        $queuedPatients = $row['count']; // Number of patients in the queue with status = 0
-        $estimatedWaitSeconds = $queuedPatients * 5 * 60; // Each patient takes approximately 5 minutes, converted to seconds
-        $estimatedTime = date("H:i:s", strtotime("+" . $estimatedWaitSeconds . " seconds")); // Format estimated time as 20:59:00
-    }
+         // Calculate Estimated Waiting Time
+         $qry = $conn->query("SELECT COUNT(*) as count FROM `queue_list` WHERE `status` = 0 AND strftime('%Y-%m-%d', `date_created`) = strftime('%Y-%m-%d', 'now')");
+         $row = $qry->fetchArray();
+         $queuedPatients = $row['count']; // Number of patients in the queue with status = 0
+         $estimatedWaitSeconds = $queuedPatients * 5 * 60; // Each patient takes approximately 5 minutes, converted to seconds
+         $estimatedTime = date("H:i:s", strtotime("+" . $estimatedWaitSeconds . " seconds")); // Format estimated time as 20:59:00
+     }
 }
 ?>
-
 
 
 
@@ -335,7 +334,8 @@ if (isset($_GET['id'])) {
                 <h2>National Institute of Infectious Diseases</h2>
                 <h4>ජාතික බෝවන රෝග විද්‍යායතනය</h4>
                 <p><strong>Patient Queue Token</strong></p>
-                <img src="<?php echo $qrFilePath; ?>" alt="QR Code" />
+                <img src="./temp/<?php echo $qrFileName; ?>" alt="QR Code" width="300" height="300" />
+
             </div>
             <div class="fs-1 fw-bold text-center text-info"><?php echo $queue ?></div>
             <center>
