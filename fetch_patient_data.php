@@ -39,4 +39,3 @@ if(isset($_POST['phone_number']) || isset($_POST['nic']) || isset($_POST['unique
     // No phone number, NIC, or unique person ID provided
     echo json_encode(['status' => 'error', 'message' => 'Phone number, NIC, or unique person ID is required']);
 }
-?>

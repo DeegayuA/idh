@@ -51,6 +51,19 @@ class Actions extends DBConnection
         return $decrypted;
     }
 
+    public function get_active_cashiers()
+    {
+        $sql = "SELECT * FROM `cashier_list` WHERE `status` = 1";
+        $qry = $this->query($sql);
+        $cashiers = [];
+        while ($row = $qry->fetchArray(SQLITE3_ASSOC)) {
+            $cashiers[] = $row;
+        }
+        $resp['status'] = 'success';
+        $resp['data'] = $cashiers;
+        return json_encode($resp);
+    }
+
     function d_login()
     {
         extract($_POST);
@@ -208,22 +221,6 @@ class Actions extends DBConnection
         // Ensure there are no additional statements after this point
         return json_encode($resp);
     }
-
-    public function get_active_cashiers()
-    {
-        $sql = "SELECT * FROM `cashier_list` WHERE `status` = 1";
-        $qry = $this->query($sql);
-        $cashiers = [];
-        while ($row = $qry->fetchArray(SQLITE3_ASSOC)) {
-            $cashiers[] = $row;
-        }
-        $resp['status'] = 'success';
-        $resp['data'] = $cashiers;
-        return json_encode($resp);
-    }
-
-
-
 
     function delete_user()
     {
@@ -400,7 +397,7 @@ class Actions extends DBConnection
         if ($res) {
             $resp['queue'] = $res['queue'];
             $resp['name'] = $this->decrypt_data($res['customer_name']);
-            $resp['phone_number'] = $this->decrypt_data($res['phone_number']); // Decrypt phone_number field
+            $resp['phone_number'] = $this->decrypt_data($res['phone_number']);
         } else {
             $resp['queue'] = "";
             $resp['name'] = "";
@@ -408,7 +405,6 @@ class Actions extends DBConnection
         }
         return json_encode($resp);
     }
-
 
 
     function next_queue()
@@ -427,6 +423,7 @@ class Actions extends DBConnection
         }
         return json_encode($resp);
     }
+    
 
 
     function update_video()

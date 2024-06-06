@@ -423,7 +423,7 @@ if (isset($_GET['id'])) {
 
             function updateEstimatedWaitTime() {
                 $.ajax({
-                    url: 'get_waiting_time.php', // PHP script to fetch waiting time
+                    // url: 'get_waiting_time.php', // PHP script to fetch waiting time
                     success: function(data) {
                         // Convert waiting time to hours and minutes
                         var hours = Math.floor(data / 60);

@@ -92,9 +92,9 @@ class DBConnection extends SQLite3
         $this->exec("INSERT or IGNORE INTO `user_list` VALUES (1,'Administrator','admin',md5('admin123'),1, CURRENT_TIMESTAMP)");
 
         $this->exec("INSERT or IGNORE INTO `doctor_list` VALUES (1,'Doctor','doc',md5('doc123'),0,1, CURRENT_TIMESTAMP)");
-        // doctor_Rooms_5
-        $startRoom = 101;
-        $totalRooms = 5;
+        // doctor_Rooms_6
+        $startRoom = 1;
+        $totalRooms = 10;
 
         // Loop through the rooms and insert records
         for ($i = 0; $i < $totalRooms; $i++) {
@@ -103,6 +103,19 @@ class DBConnection extends SQLite3
             // Insert the record into the cashier_list table
             $this->exec("INSERT or IGNORE INTO `cashier_list` VALUES ($roomNumber, '$roomName', 0, 1)");
         }
+    }
+
+    public function get_active_cashiers()
+    {
+        $sql = "SELECT * FROM `cashier_list` WHERE `status` = 1";
+        $qry = $this->query($sql);
+        $cashiers = [];
+        while ($row = $qry->fetchArray(SQLITE3_ASSOC)) {
+            $cashiers[] = $row;
+        }
+        $resp['status'] = 'success';
+        $resp['data'] = $cashiers;
+        return json_encode($resp);
     }
 
     private function openEncryptedDB($file, $key)

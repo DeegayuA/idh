@@ -179,25 +179,26 @@
       border-radius: 15px;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     }
+
     .list-group-item[data-id="1"] {
-    background-color: var(--doctor-1-color) !important;
-}
+      background-color: var(--doctor-1-color) !important;
+    }
 
-.list-group-item[data-id="2"] {
-    background-color: var(--doctor-2-color) !important;
-}
+    .list-group-item[data-id="2"] {
+      background-color: var(--doctor-2-color) !important;
+    }
 
-.list-group-item[data-id="3"] {
-    background-color: var(--doctor-3-color) !important;
-}
+    .list-group-item[data-id="3"] {
+      background-color: var(--doctor-3-color) !important;
+    }
 
-.list-group-item[data-id="4"] {
-    background-color: var(--doctor-4-color) !important;
-}
+    .list-group-item[data-id="4"] {
+      background-color: var(--doctor-4-color) !important;
+    }
 
-.list-group-item[data-id="5"] {
-    background-color: var(--doctor-5-color) !important;
-}
+    .list-group-item[data-id="5"] {
+      background-color: var(--doctor-5-color) !important;
+    }
 
 
 
@@ -360,6 +361,7 @@
       };
 
       const new_queue = (cashier_id, qid) => {
+        console.log('Fetching Queue Data for Cashier ID:', cashier_id, 'Queue ID:', qid);
         $.ajax({
           url: './../Actions.php?a=get_queue',
           method: 'POST',
@@ -368,8 +370,9 @@
             qid
           },
           dataType: 'JSON',
-          error: err => console.log(err),
+          error: err => console.log('Error Fetching Queue Data:', err),
           success: resp => {
+            console.log('Queue Data Response:', resp);
             if (resp.status === 'success') {
               let item = $(`#serving-list .list-group-item[data-id="${cashier_id}"]`);
               let cashier = item.find('.cashier-name').text();
@@ -388,14 +391,17 @@
         });
       };
 
+
       const setup = () => {
         setInterval(time_loop, 1000);
         $(window).resize(_resize_elements);
 
         websocket.onmessage = event => {
+          console.log('WebSocket Message Received:', event.data);
           let Data = JSON.parse(event.data);
           if (Data.type) {
             if (Data.type === 'queue') {
+              console.log('Queue Data:', Data);
               new_queue(Data.cashier_id, Data.qid);
             }
             if (Data.type === 'test') {
@@ -409,6 +415,7 @@
             }
           }
         };
+
 
 
       };

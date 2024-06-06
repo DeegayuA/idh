@@ -5,6 +5,11 @@ session_start();
 require_once('DBConnection.php');
 require_once('config.php');
 
+// Define the $page variable
+$page = isset($page) ? $page : 'Home'; // Provide a default value
+
+$title = ucwords(str_replace('_', ' ', $page));
+
 $conn = new DBConnection();
 $customer_name = isset($_POST['customer_name']) ? $_POST['customer_name'] : '';
 $sex = isset($_POST['sex']) ? $_POST['sex'] : '';
