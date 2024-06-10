@@ -6,10 +6,9 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 require_once('./../DBConnection.php');
-
 $conn = new DBConnection();
 
-// Fetch active cashier IDs
+// Fetch active cashier (doctor) IDs
 $active_cashiers_response = $conn->get_active_cashiers();
 $active_cashiers = json_decode($active_cashiers_response, true)['data'];
 $active_cashier_count = count($active_cashiers);
@@ -26,7 +25,17 @@ if ($matches) {
 
 // Calculate the number of doctor rooms to display
 $doctor_room_count = min(10, $active_cashier_count); // Limit to maximum 10 rooms
+
+// Prepare the JSON response
+$response = array("data" => array());
+for ($i = 0; $i < $doctor_room_count; $i++) {
+    $response["data"][] = array(
+        "name" => "Doctor Room " . ($i + 1),
+        "color" => $doctor_colors[$i]
+    );
+}
 ?>
+
 <style>
    :root {
     --doctor-1-color: red;
@@ -46,7 +55,7 @@ $doctor_room_count = min(10, $active_cashier_count); // Limit to maximum 10 room
         --doctor-1-color: darkred;
         --doctor-2-color: darkgreen;
         --doctor-3-color: darkblue;
-        --doctor-4-color: sienna;
+        --doctor-4-color: yellow;
         --doctor-5-color: pink;
         --doctor-6-color: darkorange;
         --doctor-7-color: indigo;
@@ -234,101 +243,32 @@ $doctor_room_count = min(10, $active_cashier_count); // Limit to maximum 10 room
         console.log('Sending WebSocket Message:', message);
         websocket.send(message);
     }
+
+    // ESP32 WebSocket Integration
+    try {
+        var esp32_websocket = new WebSocket("ws://192.168.4.1:81/");
+        esp32_websocket.onopen = function(event) {
+            console.log('ESP Socket is open!');
+        };
+        esp32_websocket.onclose = function(event) {
+            console.log('ESP Socket has been closed!');
+        };
+        esp32_websocket.onmessage = function(event) {
+            var message = JSON.parse(event.data);
+            var doctorRoomNumber = message.doctorRoomNumber;
+            if (message.press === "single") {
+                console.log('Notify Button Triggered for Doctor Room:', doctorRoomNumber);
+                if (in_queue.queue) {
+                    update_queue_info(in_queue, doctorRoomNumber);
+                } else {
+                    alert("No Queue Available");
+                }
+            } else if (message.press === "double") {
+                console.log('Next Queue Button Triggered for Doctor Room:', doctorRoomNumber);
+                get_queue(doctorRoomNumber);
+            }
+        };
+    } catch(err) {
+        console.warn("ESP32 device not connected:", err);
+    }
 </script>
-
-
-
-
-<style>
-   :root {
-    --doctor-1-color: red;
-    --doctor-2-color: green;
-    --doctor-3-color: blue;
-    --doctor-4-color: yellow;
-    --doctor-5-color: pink;
-    --doctor-6-color: orange;
-    --doctor-7-color: purple;
-    --doctor-8-color: cyan;
-    --doctor-9-color: teal;
-    --doctor-10-color: magenta;
-}
-
-@media (prefers-color-scheme: dark) {
-    :root {
-        --doctor-1-color: darkred;
-        --doctor-2-color: darkgreen;
-        --doctor-3-color: darkblue;
-        --doctor-4-color: sienna;
-        --doctor-5-color: pink;
-        --doctor-6-color: darkorange;
-        --doctor-7-color: indigo;
-        --doctor-8-color: darkcyan;
-        --doctor-9-color: darkslategray;
-        --doctor-10-color: darkmagenta;
-    }
-}
-
-
-    .full-height {
-        height: 100vh;
-    }
-
-    .center-content {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
-
-    .card-custom {
-        width: 100%;
-        max-width: 400px;
-        border-radius: 15px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    .btn-custom {
-        width: 100%;
-        border-radius: 15px;
-        font-size: 1rem;
-        padding: 10px;
-
-    }
-
-    .btn-primary {
-        background-color: var(--primary-color);
-    }
-
-    .btn-primary:hover {
-        background-color: var(--primary-hover);
-    }
-
-    .btn-secondary {
-        background-color: transparent;
-        border: 1px solid var(--primary-color);
-        transition: all 0.3s ease-in-out;
-        color: var(--text-color);
-    }
-
-    .btn-secondary:hover {
-        background-color: transparent;
-        border: 2px solid var(--primary-hover);
-        color: var(--text-color);
-    }
-
-    .gap {
-        margin-left: 0.25rem;
-    }
-
-    .doctor-room {
-        flex: auto auto auto;
-        /* Allow elements to shrink but not grow */
-        width: 400px;
-        /* Set a fixed width for each doctor room */
-        margin: 10px;
-        /* Add some margin for spacing */
-    }
-
-    .button-section {
-        margin: 10px;
-    }
-</style>

@@ -2,78 +2,85 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include <WiFi.h>
-#include <WebServer.h>
+#include <HTTPClient.h>
 #include <WebSocketsServer.h>
+#include <ArduinoJson.h>
+#include <ESP32Encoder.h>
+#include <Fonts/FreeSans12pt7b.h>
 
-#define SCREEN_WIDTH 128 // OLED display width, in pixels
-#define SCREEN_HEIGHT 64 // OLED display height, in pixels
-#define OLED_RESET    -1 // Reset pin # (or -1 if sharing Arduino reset pin)
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define OLED_RESET -1
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-const char* ssid = "ESP32_Hotspot";      // Hotspot SSID
-const char* password = "12345678";       // Hotspot password
+const char *ssid = "IDH_QMS_by_EDIC_UOK";
+const char *password = "12345678";
+const char *debugSsid = "Yasitha";       // Debug WiFi SSID
+const char *debugPassword = "12345678";  // Debug WiFi Password
+String serverIPAddress = "";
 
 WebSocketsServer webSocket = WebSocketsServer(82);
 
-const int buttonPins[] = {13, 12, 14, 27, 26};  // GPIO pins for buttons (D13, D12, D14, D27, D26)
-const int numButtons = 5;
+// Rotary Encoder Pins
+const int CLK_PIN = 12;
+const int DT_PIN = 13;
+const int SW_PIN = 14;
 
-int buttonStates[numButtons] = {HIGH};  // Array to store button states
-int lastButtonStates[numButtons] = {HIGH};
-unsigned long lastDebounceTimes[numButtons] = {0};  // Array to store last debounce times
-unsigned long debounceDelay = 50;    // the debounce time; increase if the output flickers
+// RGB LED Pins
+const int LED_PIN_RED = 32;
+const int LED_PIN_GREEN = 33;
+const int LED_PIN_BLUE = 26;
 
-unsigned long lastPressTime[numButtons] = {0}; // Array to store the time of the last button press
-bool holdTriggered[numButtons] = {false}; // Array to store whether the hold action was triggered
-bool doublePressed[numButtons] = {false}; // Array to store whether the double press action was triggered
+ESP32Encoder encoder;
 
-bool pcConnected = false; // Flag to track PC connection status
-bool pcHeartbeat = false; // Flag to track PC heartbeat
+bool pcConnected = false;
 
-const unsigned long doublePressDuration = 1000; // Duration in milliseconds within which a double press is recognized
+const unsigned long longPressDuration = 500;
+unsigned long lastPressTime = 0;
 
-unsigned long lastPingSent = 0;
-const unsigned long pingInterval = 2000; 
+// Simulated database data
+String doctorNames[10];
+String doctorColors[10];
+int numDoctors = 0;
+int currentDoctorIndex = 0;
 
 void setup() {
-  // Initialize buttons
-  for (int i = 0; i < numButtons; i++) {
-    pinMode(buttonPins[i], INPUT_PULLUP);
-  }
+  pinMode(SW_PIN, INPUT_PULLUP);
 
-  // Initialize serial communication
+  pinMode(LED_PIN_RED, OUTPUT);
+  pinMode(LED_PIN_GREEN, OUTPUT);
+  pinMode(LED_PIN_BLUE, OUTPUT);
+
   Serial.begin(115200);
 
-  // Initialize OLED display
-  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+  encoder.attachHalfQuad(DT_PIN, CLK_PIN);
+  encoder.setCount(0);
+
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
     Serial.println(F("SSD1306 allocation failed"));
-    for(;;);
+    for (;;)
+      ;
   }
-  
-  // Display "Welcome" message
-  display.clearDisplay();
-  display.setTextSize(1);
-  display.setTextColor(SSD1306_WHITE);
-  display.setCursor(0, 10);
-  display.println("Welcome");
-  display.display();
+
+  showFullScreenMessage("System Turning On");
   delay(2000);
 
-  // Display "Ready to Connect with PC" message
-  display.clearDisplay();
-  display.setCursor(0, 10);
-  display.println("Ready to Connect");
-  display.println("with PC");
-  display.display();
+  showFullScreenMessage("Ready to Connect");
   delay(2000);
 
-  // Set up WiFi as access point
-  WiFi.softAP(ssid, password);
-  IPAddress IP = WiFi.softAPIP();
-  Serial.print("AP IP address: ");
-  Serial.println(IP);
+  // Connect to the debug WiFi network
+  WiFi.begin(debugSsid, debugPassword);
+  Serial.print("Connecting to WiFi...");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.print(".");
+  }
+  Serial.println();
+  Serial.print("Connected to WiFi. IP address: ");
+  Serial.println(WiFi.localIP());
+  serverIPAddress = WiFi.localIP().toString();
+  fetchDoctorData();
 
-  // WebSocket server setup
   webSocket.begin();
   webSocket.onEvent(webSocketEvent);
 }
@@ -81,99 +88,97 @@ void setup() {
 void loop() {
   webSocket.loop();
 
-  // Check PC connection status and update OLED display
   if (webSocket.connectedClients() > 0) {
     if (!pcConnected) {
-      display.clearDisplay();
-      display.setCursor(0, 10);
-      display.println("PC Connected");
-      display.display();
+      showFullScreenMessage("PC Connected");
+      delay(2000);
       pcConnected = true;
+      displayDoctorNames();
     }
   } else {
     if (pcConnected) {
-      display.clearDisplay();
-      display.setCursor(0, 10);
-      display.println("PC Disconnected");
-      display.display();
+      showFullScreenMessage("PC Disconnected");
+      delay(2000);
       pcConnected = false;
     }
   }
 
-// if (millis() - webSocket.ping() > 3000) { // Replace pingAlive with ping (if available)
-//   pcHeartbeat = false; // No heartbeat received
-// } else {
-//   pcHeartbeat = true; // Heartbeat received
-// }
+  handleRotaryEncoder();
 
-
-  // Update OLED display with PC heartbeat status
-  display.clearDisplay();
-  display.setCursor(0, 10);
-  if (pcHeartbeat) {
-    display.println("PC Heartbeat: OK");
-  } else {
-    display.println("PC Heartbeat: No");
-  }
-  display.display();
-
-  // Read the state of the pushbuttons
-  for (int i = 0; i < numButtons; i++) {
-    int reading = digitalRead(buttonPins[i]);
-
-    // Check for state change
-    if (reading != lastButtonStates[i]) {
-      lastDebounceTimes[i] = millis();
-    }
-
-    // Debounce button
-    if ((millis() - lastDebounceTimes[i]) > debounceDelay) {
-      if (reading != buttonStates[i]) {
-        buttonStates[i] = reading;
-
-        // Check if button is pressed
-        if (buttonStates[i] == LOW) {
-          // Calculate time since last press
-          unsigned long timeSinceLastPress = millis() - lastPressTime[i];
-          
-          // Update last press time
-          lastPressTime[i] = millis();
-        
-
-          // Check if the button was double pressed
-          if (timeSinceLastPress < doublePressDuration) {
-            doublePressed[i] = true;
-          } else {
-            doublePressed[i] = false;
-          }
-          
-          // Display pressed button
-          display.clearDisplay();
-          display.setCursor(0, 10);
-          display.print("Button ");
-          display.print(i + 1);
-         if (doublePressed[i]) {
-            display.println(" Double Pressed");
-          } else {
-            display.println(" Pressed");
-          }
-          display.display();
-
-          // Send WebSocket message to website with doctor room number
-          if (!doublePressed[i]) {
-            webSocket.broadcastTXT("{\"action\": \"next_queue\", \"room\": " + String(i + 1) + "}");
-          }
-          delay(1000); // Delay to show the message for 1 second
-        }
-      }
-    }
-
-    // Update last button state
-    lastButtonStates[i] = reading;
+  if (digitalRead(SW_PIN) == LOW) {
+    handleButtonPress();
   }
 }
 
-void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
+void showFullScreenMessage(const char *message) {
+  display.clearDisplay();
+  display.setFont(&FreeSans12pt7b);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(0, 20);
+  display.println(message);
+  display.display();
+}
+
+void displayDoctorNames() {
+  display.clearDisplay();
+  display.setTextSize(1);
+  for (int i = 0; i < numDoctors; i++) {
+    if (i == currentDoctorIndex) {
+      display.setTextColor(SSD1306_WHITE, SSD1306_BLACK);
+    } else {
+      display.setTextColor(SSD1306_WHITE);
+    }
+    display.setCursor(0, i * 10);
+    display.println(doctorNames[i]);
+  }
+  display.display();
+}
+
+void handleRotaryEncoder() {
+  long newPosition = encoder.getCount();
+  if (newPosition > currentDoctorIndex) {
+    currentDoctorIndex = (currentDoctorIndex + 1) % numDoctors;
+    showFullScreenMessage(doctorNames[currentDoctorIndex].c_str());
+    setColor(doctorColors[currentDoctorIndex].c_str());
+  } else if (newPosition < currentDoctorIndex) {
+    currentDoctorIndex = (currentDoctorIndex - 1 + numDoctors) % numDoctors;
+    showFullScreenMessage(doctorNames[currentDoctorIndex].c_str());
+    setColor(doctorColors[currentDoctorIndex].c_str());
+  }
+  encoder.setCount(currentDoctorIndex);
+}
+
+void handleButtonPress() {
+  unsigned long currentTime = millis();
+  unsigned long pressDuration = currentTime - lastPressTime;
+
+  if (pressDuration >= longPressDuration) {
+    // Long press
+    blinkLED(3, 100);
+    webSocket.broadcastTXT("{\"action\": \"next\", \"press\": \"long\", \"doctorRoomNumber\": " + String(currentDoctorIndex + 1) + "}");
+  } else {
+    // Short press
+    blinkLED(1, 500);
+    webSocket.broadcastTXT("{\"action\": \"notify\", \"press\": \"single\", \"doctorRoomNumber\": " + String(currentDoctorIndex + 1) + "}");
+  }
+
+  lastPressTime = currentTime;
+}
+
+void blinkLED(int times, int delayTime) {
+  for (int i = 0; i < times; i++) {
+    digitalWrite(LED_PIN_RED, HIGH);
+    digitalWrite(LED_PIN_GREEN, HIGH);
+    digitalWrite(LED_PIN_BLUE, HIGH);
+    delay(delayTime);
+    digitalWrite(LED_PIN_RED, LOW);
+    digitalWrite(LED_PIN_GREEN, LOW);
+    digitalWrite(LED_PIN_BLUE, LOW);
+    delay(delayTime);
+  }
+}
+
+void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length) {
   switch (type) {
     case WStype_DISCONNECTED:
       Serial.println("WebSocket Disconnected");
@@ -183,9 +188,125 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
       break;
     case WStype_TEXT:
       Serial.printf("WebSocket Text: %s\n", payload);
+      handleWebSocketMessage(payload);
       break;
     case WStype_BIN:
       Serial.println("WebSocket Binary");
       break;
   }
+}
+
+void handleWebSocketMessage(uint8_t *payload) {
+  String message = String((char *)payload);
+  DynamicJsonDocument doc(1024);
+  DeserializationError error = deserializeJson(doc, message);
+
+  if (error) {
+    Serial.print(F("deserializeJson() failed: "));
+    Serial.println(error.f_str());
+    return;
+  }
+
+  const char *action = doc["action"];
+  if (strcmp(action, "show_color") == 0) {
+    const char *color = doc["color"];
+    setColor(color);
+  }
+}
+
+void fetchDoctorData() {
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    String url = "http://192.168.137.162/idh/idh.github.io/doctorlist/doc_list.php";
+    Serial.println(url);
+    http.begin(url);  // Use the URL variable here
+    Serial.println("HTTP GET request started");
+    int httpResponseCode = http.GET();
+    Serial.printf("HTTP Response code: %d\n", httpResponseCode);
+
+    if (httpResponseCode == 200) {
+      String payload = http.getString();
+      Serial.println("HTTP GET request successful");
+      Serial.println("Payload: " + payload);
+      DynamicJsonDocument doc(2048);
+      DeserializationError error = deserializeJson(doc, payload);
+
+      if (error) {
+        Serial.print(F("deserializeJson() failed: "));
+        Serial.println(error.f_str());
+        return;
+      }
+
+      numDoctors = doc["data"].size();
+      for (int i = 0; i < numDoctors; i++) {
+        doctorNames[i] = doc["data"][i]["name"].as<String>();
+        doctorColors[i] = doc["data"][i]["color"].as<String>();
+      }
+
+      showFullScreenMessage("System Ready");
+      delay(2000);
+
+      // Display the first doctor's name and set LED color
+      currentDoctorIndex = 0;
+      showFullScreenMessage(doctorNames[currentDoctorIndex].c_str());
+      setColor(doctorColors[currentDoctorIndex].c_str());
+
+    } else {
+      Serial.printf("HTTP GET request failed: %d\n", httpResponseCode);
+      showFullScreenMessage("No web connection");
+    }
+
+    http.end();
+  } else {
+    Serial.println("WiFi not connected");
+  }
+}
+
+void setColor(const char *color) {
+  int red = 255, green = 255, blue = 255;  // Default to white
+
+  // Define a lookup table for color names and their corresponding RGB values
+  struct Color {
+    const char *name;
+    int red;
+    int green;
+    int blue;
+  };
+
+  const Color colorTable[] = {
+    { "red", 255, 0, 0 },
+    { "green", 0, 255, 0 },
+    { "blue", 0, 0, 255 },
+    { "yellow", 255, 255, 0 },
+    { "pink", 255, 192, 203 },
+    { "orange", 255, 165, 0 },
+    { "purple", 128, 0, 128 },
+    { "cyan", 0, 255, 255 },
+    { "teal", 0, 128, 128 },
+    { "magenta", 255, 0, 255 },
+    { "darkred", 139, 0, 0 },
+    { "darkgreen", 0, 100, 0 },
+    { "darkblue", 0, 0, 139 },
+    { "darkorange", 255, 140, 0 },
+    { "indigo", 75, 0, 130 },
+    { "darkcyan", 0, 139, 139 },
+    { "darkslategray", 47, 79, 79 },
+    { "darkmagenta", 139, 0, 139 },
+    // Add more colors here as needed
+  };
+
+  // Loop through the color table to find a match
+  for (int i = 0; i < sizeof(colorTable) / sizeof(colorTable[0]); i++) {
+    if (strcmp(color, colorTable[i].name) == 0) {
+      red = colorTable[i].red;
+      green = colorTable[i].green;
+      blue = colorTable[i].blue;
+      break;  // Exit loop once a match is found
+    }
+  }
+
+  // Set the LED color
+  analogWrite(LED_PIN_RED, red);
+  analogWrite(LED_PIN_GREEN, green);
+  analogWrite(LED_PIN_BLUE, blue);
 }
