@@ -5,9 +5,6 @@ require_once('DBConnection.php');
 require_once('phpqrcode/qrlib.php');
 date_default_timezone_set('Asia/Colombo');
 
-// Generate the queue number
-$queue = $conn->generateQueueNumber();
-
 // Initialize an array to hold data for encoding
 $dataToEncode = [];
 
@@ -65,32 +62,48 @@ if (isset($_GET['id'])) {
 }
 
 // Additional Safe Code to Handle QR Code Generation
-if (isset($_POST['encrypted_unique_person_id'])) {
+if (!isset($_GET['id']) && isset($_POST['encrypted_unique_person_id'])) {
     $encrypted_unique_person_id = $_POST['encrypted_unique_person_id'];
 
     if ($encrypted_unique_person_id) {
-        // Create a unique, safe filename
-        $safe_id = preg_replace('/[^a-zA-Z0-9]/', '_', base64_encode($encrypted_unique_person_id));
-        $filename = "./temp/qrcode_" . $safe_id . ".png";
-
-        if (!file_exists('./temp')) {
-            mkdir('./temp', 0777, true);
-        }
-
-        QRcode::png($encrypted_unique_person_id, $filename);
-
-        if (file_exists($filename)) {
-            header('Content-Type: image/png');
-            readfile($filename);
-            exit;
+        // Check if the provided encrypted_unique_person_id exists in the database
+        if ($conn->checkDecryptedUniquePersonIDExists($encrypted_unique_person_id)) {
+            // If it exists, fetch the previously generated QR code file name associated with that encrypted_unique_person_id
+            $existingQRFileName = $conn->searchByQRCodeFileName($encrypted_unique_person_id);
+            if ($existingQRFileName) {
+                // Output the QR code file
+                header('Content-Type: image/png');
+                readfile('./temp/' . $existingQRFileName);
+                exit;
+            }
         } else {
-            echo "Error: QR code generation failed.";
+            // Generate QR code data and file name
+            $safe_id = preg_replace('/[^a-zA-Z0-9]/', '_', base64_encode($encrypted_unique_person_id));
+            $qrFileName = 'qrcode_' . $safe_id . '.png';
+            $qrFilePath = './temp/' . $qrFileName;
+
+            // Generate QR code and store it in the database
+            if (!file_exists('./temp')) {
+                mkdir('./temp', 0777, true);
+            }
+
+            $dataToEncode = ['encrypted_unique_person_id' => $encrypted_unique_person_id];
+            $qrCodeData = json_encode($dataToEncode);
+
+            QRcode::png($qrCodeData, $qrFilePath, QR_ECLEVEL_H, 4);
+            $conn->fillQRCodeList($encrypted_unique_person_id, $qrFileName);
+
+            // Output the QR code file
+            header('Content-Type: image/png');
+            readfile($qrFilePath);
+            exit;
         }
     } else {
         echo "Error: Invalid unique person ID.";
     }
 }
 ?>
+
 
 
 

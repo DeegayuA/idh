@@ -310,6 +310,7 @@ $encrypted_unique_person_id = isset($_POST['encrypted_unique_person_id']) ? $_PO
             $('#phone_number, #encrypted_id_number').on('blur', function() {
                 var phoneNumber = $('#phone_number').val();
                 var nicNumber = $('#encrypted_id_number').val();
+                var uniquePersonId = $('#encrypted_unique_person_id').val();
 
                 // // Check if both fields are non-empty
                 // if (phoneNumber && nicNumber) {
@@ -318,7 +319,7 @@ $encrypted_unique_person_id = isset($_POST['encrypted_unique_person_id']) ? $_PO
                 // }
 
                 // Fetch patient data
-                fetchPatientData(phoneNumber, nicNumber);
+                fetchPatientData(phoneNumber, nicNumber, uniquePersonId);
             });
 
             // Function to fetch patient data

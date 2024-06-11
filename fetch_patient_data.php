@@ -31,11 +31,15 @@ if(isset($_POST['phone_number']) || isset($_POST['nic']) || isset($_POST['unique
             'status' => 'success',
             'data' => $recentPatient
         ]);
+        exit(); // Add this line to stop further execution
     } else {
         // No data found for the given phone number, NIC, or unique person ID
         echo json_encode(['status' => 'not_found']);
+        exit(); // Add this line to stop further execution
     }
 } else {
     // No phone number, NIC, or unique person ID provided
     echo json_encode(['status' => 'error', 'message' => 'Phone number, NIC, or unique person ID is required']);
+    exit(); // Add this line to stop further execution
 }
+?>
