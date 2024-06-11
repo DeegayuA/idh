@@ -182,7 +182,7 @@ $encrypted_unique_person_id = isset($_POST['encrypted_unique_person_id']) ? $_PO
             flex-wrap: wrap;
         }
 
-        #doctor-list label{
+        #doctor-list label {
             margin-right: 10px;
         }
 
@@ -191,7 +191,8 @@ $encrypted_unique_person_id = isset($_POST['encrypted_unique_person_id']) ? $_PO
             margin-bottom: 10px;
             /* Adjust as needed */
         }
-        #none{
+
+        #none {
             margin-bottom: 10px;
             margin-right: 10px;
         }
@@ -257,7 +258,7 @@ $encrypted_unique_person_id = isset($_POST['encrypted_unique_person_id']) ? $_PO
                         </div>
                     </div>
 
-
+                    <input type="hidden" name="encrypted_unique_person_id" value="<?php echo htmlspecialchars($encrypted_unique_person_id); ?>">
                     <div class="form-group text-center my-2">
                         <button class="btn-primary btn-lg btn col-sm-4 rounded-0" type='submit'>Get Queue</button>
                     </div>
@@ -453,7 +454,7 @@ $encrypted_unique_person_id = isset($_POST['encrypted_unique_person_id']) ? $_PO
                 }, function(qrCodeMessage) {
                     try {
                         var qrData = JSON.parse(qrCodeMessage);
-                        
+
                         console.log('Decoded QR Data:', qrData);
                         fetchPatientData('', '', qrData.encrypted_unique_person_id);
                         $('#qr-reader').hide();

@@ -39,10 +39,15 @@ if (isset($_GET['id'])) {
             // Generate QR code data and file name
             $dataToEncode = ['encrypted_unique_person_id' => $encrypted_unique_person_id];
             $qrCodeData = json_encode($dataToEncode);
-            $qrFileName = 'qrcode_' . $encrypted_unique_person_id . '.png';
+            $safe_id = preg_replace('/[^a-zA-Z0-9]/', '_', base64_encode($encrypted_unique_person_id));
+            $qrFileName = 'qrcode_' . $safe_id . '.png';
             $qrFilePath = './temp/' . $qrFileName;
 
             // Generate QR code and store it in the database
+            if (!file_exists('./temp')) {
+                mkdir('./temp', 0777, true);
+            }
+
             QRcode::png($qrCodeData, $qrFilePath, QR_ECLEVEL_H, 4);
             $conn->fillQRCodeList($encrypted_unique_person_id, $qrFileName);
         }
@@ -50,13 +55,40 @@ if (isset($_GET['id'])) {
         // Get Patient History based on phone number or NIC
         $patientHistory = $conn->getPatientHistory($phone_number ?? $nic, 5); // Limit to 5 entries
 
-         // Calculate Estimated Waiting Time
-         $qry = $conn->query("SELECT COUNT(*) as count FROM `queue_list` WHERE `status` = 0 AND strftime('%Y-%m-%d', `date_created`) = strftime('%Y-%m-%d', 'now')");
-         $row = $qry->fetchArray();
-         $queuedPatients = $row['count']; // Number of patients in the queue with status = 0
-         $estimatedWaitSeconds = $queuedPatients * 5 * 60; // Each patient takes approximately 5 minutes, converted to seconds
-         $estimatedTime = date("H:i:s", strtotime("+" . $estimatedWaitSeconds . " seconds")); // Format estimated time as 20:59:00
-     }
+        // Calculate Estimated Waiting Time
+        $qry = $conn->query("SELECT COUNT(*) as count FROM `queue_list` WHERE `status` = 0 AND strftime('%Y-%m-%d', `date_created`) = strftime('%Y-%m-%d', 'now')");
+        $row = $qry->fetchArray();
+        $queuedPatients = $row['count']; // Number of patients in the queue with status = 0
+        $estimatedWaitSeconds = $queuedPatients * 5 * 60; // Each patient takes approximately 5 minutes, converted to seconds
+        $estimatedTime = date("H:i:s", strtotime("+" . $estimatedWaitSeconds . " seconds")); // Format estimated time as 20:59:00
+    }
+}
+
+// Additional Safe Code to Handle QR Code Generation
+if (isset($_POST['encrypted_unique_person_id'])) {
+    $encrypted_unique_person_id = $_POST['encrypted_unique_person_id'];
+
+    if ($encrypted_unique_person_id) {
+        // Create a unique, safe filename
+        $safe_id = preg_replace('/[^a-zA-Z0-9]/', '_', base64_encode($encrypted_unique_person_id));
+        $filename = "./temp/qrcode_" . $safe_id . ".png";
+
+        if (!file_exists('./temp')) {
+            mkdir('./temp', 0777, true);
+        }
+
+        QRcode::png($encrypted_unique_person_id, $filename);
+
+        if (file_exists($filename)) {
+            header('Content-Type: image/png');
+            readfile($filename);
+            exit;
+        } else {
+            echo "Error: QR code generation failed.";
+        }
+    } else {
+        echo "Error: Invalid unique person ID.";
+    }
 }
 ?>
 
