@@ -7,12 +7,6 @@ if (session_status() === PHP_SESSION_NONE) {
 // Set the session timeout duration in seconds
 $session_timeout = 1800; // 30 minutes
 
-
-session_start();
-// if(!isset($_SESSION['user_id'])){
-//     header("Location:./login.php");
-//     exit;
-// }
 // Update last activity timestamp
 $_SESSION['last_activity'] = time();
 
@@ -225,7 +219,7 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
                 <div>
                     <div class="dropdown">
                         <button class="btn btn-secondary dropdown-toggle bg-transparent text-light border-0" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
-                            <?php echo $_SESSION['name'] ?>
+                            <?php echo $_SESSION['fullname'] ?>
                         </button>
                         <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
                             <li><a class="dropdown-item" href="./../Actions.php?a=d_logout">Logout</a></li>

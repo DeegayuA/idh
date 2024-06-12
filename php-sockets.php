@@ -133,4 +133,6 @@ while (true) {
 		}
 	}
 }
-socket_close($socketResource);
+
+// socket_close($socketResource);
+?>
