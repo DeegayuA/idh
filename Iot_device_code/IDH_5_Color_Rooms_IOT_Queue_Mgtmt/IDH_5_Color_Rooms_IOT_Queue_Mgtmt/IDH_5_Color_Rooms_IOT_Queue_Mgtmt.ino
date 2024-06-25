@@ -16,9 +16,9 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 const char *ssid = "IDH_QMS_by_EDIC_UOK";
 const char *password = "12345678";
-const char *debugSsid = "Malitha";       // Debug WiFi SSID
-const char *debugPassword = "00000000";  // Debug WiFi Password
-String serverIPAddress = "192.168.43.199";
+const char *debugSsid = "iPhone";       // Debug WiFi SSID
+const char *debugPassword = "20010123";  // Debug WiFi Password
+String serverIPAddress = "172.20.10.2";
 
 WebSocketsServer webSocket = WebSocketsServer(82);
 
@@ -38,8 +38,9 @@ const int LED_PIN_BLUE = 26;
 
 bool pcConnected = false;
 
-const unsigned long longPressDuration = 500;
+const unsigned long doublePressThreshold = 300; // Threshold for double press detection
 unsigned long lastPressTime = 0;
+unsigned long lastEncoderReadTime = 0;
 
 // Simulated database data
 String doctorNames[10];
@@ -60,9 +61,10 @@ void setup() {
   Serial.begin(115200);
 
   rotaryEncoder.begin();
-  rotaryEncoder.setup(readEncoderISR); // Ensure readEncoderISR is declared
+  rotaryEncoder.setup(readEncoderISR);
   rotaryEncoder.setBoundaries(0, 1000, false);
-  rotaryEncoder.setAcceleration(250);
+  rotaryEncoder.setAcceleration(250); // Adjust as needed for desired response
+rotaryEncoder.setEncoderSteps(1); // Set the steps per click to improve accuracy
 
   if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
     Serial.println(F("SSD1306 allocation failed"));
@@ -111,57 +113,73 @@ void loop() {
     }
   }
 
-  handleRotaryEncoder();
-
-  if (rotaryEncoder.isEncoderButtonClicked()) {
+  // Handle button press with high priority
+  if (digitalRead(ROTARY_ENCODER_BUTTON_PIN) == LOW) {
     handleButtonPress();
   }
+
+  handleRotaryEncoder();
 
   delay(10);
 }
 
-void rotary_onButtonClick() {
-  static unsigned long lastTimePressed = 0; // Soft debouncing
-  if (millis() - lastTimePressed < 500) {
-    return;
-  }
-  lastTimePressed = millis();
-  Serial.print("Button pressed ");
-  Serial.print(millis());
-  Serial.println(" milliseconds after restart");
-
-  // Reset rotary encoder
-  rotaryEncoder.reset();
-}
-
 void handleRotaryEncoder() {
-  if (rotaryEncoder.encoderChanged()) {
-    long newPosition = rotaryEncoder.readEncoder();
-    if (newPosition > currentDoctorIndex) {
-      currentDoctorIndex = (currentDoctorIndex + 1) % numDoctors;
-      showFullScreenMessage(doctorNames[currentDoctorIndex].c_str());
-      setColor(doctorColors[currentDoctorIndex].c_str());
-    } else if (newPosition < currentDoctorIndex) {
-      currentDoctorIndex = (currentDoctorIndex - 1 + numDoctors) % numDoctors;
-      showFullScreenMessage(doctorNames[currentDoctorIndex].c_str());
-      setColor(doctorColors[currentDoctorIndex].c_str());
+  if (millis() - lastEncoderReadTime > 50) { // 50ms debounce
+    lastEncoderReadTime = millis();
+    if (rotaryEncoder.encoderChanged()) {
+      long newPosition = rotaryEncoder.readEncoder();
+      Serial.print("Rotary Encoder position: ");
+      Serial.println(newPosition);
+
+      if (newPosition > currentDoctorIndex) {
+        currentDoctorIndex = (currentDoctorIndex + 1) % numDoctors;
+        Serial.print("Incremented Doctor Index: ");
+        Serial.println(currentDoctorIndex);
+        showFullScreenMessage(doctorNames[currentDoctorIndex].c_str());
+        setColor(doctorColors[currentDoctorIndex].c_str());
+      } else if (newPosition < currentDoctorIndex) {
+        currentDoctorIndex = (currentDoctorIndex - 1 + numDoctors) % numDoctors;
+        Serial.print("Decremented Doctor Index: ");
+        Serial.println(currentDoctorIndex);
+        showFullScreenMessage(doctorNames[currentDoctorIndex].c_str());
+        setColor(doctorColors[currentDoctorIndex].c_str());
+      }
+      rotaryEncoder.reset();
     }
-    rotaryEncoder.reset();
   }
 }
 
 void handleButtonPress() {
+  static unsigned long lastButtonPressTime = 0;
+  static bool singlePressDetected = false;
+
   unsigned long currentTime = millis();
+
+  // Debounce the button
+  if (currentTime - lastButtonPressTime < 300) {
+    return; // Ignore button press if within debounce period
+  }
+  lastButtonPressTime = currentTime;
+
   unsigned long pressDuration = currentTime - lastPressTime;
 
-  if (pressDuration >= longPressDuration) {
-    // Long press
-    blinkLED(3, 100);
-    webSocket.broadcastTXT("{\"action\": \"next\", \"press\": \"long\", \"doctorRoomNumber\": " + String(currentDoctorIndex + 1) + "}");
+  if (singlePressDetected) {
+    // Double press detected
+    Serial.println("Double press detected");
+    blinkLED(2, 300);
+    webSocket.broadcastTXT("{\"action\": \"next\", \"press\": \"double\", \"doctorRoomNumber\": " + String(currentDoctorIndex + 1) + "}");
+    singlePressDetected = false; // Reset single press detection
   } else {
-    // Short press
-    blinkLED(1, 500);
-    webSocket.broadcastTXT("{\"action\": \"notify\", \"press\": \"single\", \"doctorRoomNumber\": " + String(currentDoctorIndex + 1) + "}");
+    singlePressDetected = true; // Register single press
+    delay(doublePressThreshold); // Wait to detect possible double press
+
+    if (singlePressDetected) {
+      // Single press confirmed (after threshold time)
+      Serial.println("Single press detected");
+      blinkLED(1, 500);
+      webSocket.broadcastTXT("{\"action\": \"notify\", \"press\": \"single\", \"doctorRoomNumber\": " + String(currentDoctorIndex + 1) + "}");
+      singlePressDetected = false;
+    }
   }
 
   lastPressTime = currentTime;
@@ -180,7 +198,6 @@ void blinkLED(int times, int delayTime) {
   }
 }
 
-// Move this function up to ensure it's declared before used
 void IRAM_ATTR readEncoderISR() {
   rotaryEncoder.readEncoder_ISR();
 }
@@ -241,6 +258,8 @@ void handleWebSocketMessage(uint8_t *payload) {
   const char *action = doc["action"];
   if (strcmp(action, "show_color") == 0) {
     const char *color = doc["color"];
+    Serial.print("Received color change command: ");
+    Serial.println(color);
     setColor(color);
   }
 }

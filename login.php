@@ -46,7 +46,8 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
             }
         }
 
-        html, body {
+        html,
+        body {
             height: 100%;
             background: var(--background-color);
             color: var(--text-color);
@@ -65,13 +66,6 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
             box-shadow: var(--box-shadow);
             border-radius: var(--border-radius);
             background: var(--card-background);
-        }
-
-        .header-text {
-            font-weight: 600;
-            font-size: 1.75rem;
-            text-align: center;
-            margin-bottom: 1rem;
         }
 
         .sub-header-text {
@@ -122,9 +116,10 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
             margin-top: 2rem;
         }
 
-        .brakeline{
+        .brakeline {
             color: var(--primary-color);
         }
+
         .footer-logos img {
             height: 50px;
             width: auto;
@@ -135,12 +130,44 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
             display: none;
             margin-top: 10px;
         }
+
+        .header-text {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .logo-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .header-logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--primary-color);
+        }
     </style>
 </head>
 
 <body>
     <div class="container">
-        <h1 class="header-text">National Institute of Infectious Diseases <br> Sri Lanka</h1>
+
+        <h1 class="header-text">
+            <div class="logo-container">
+                <img src="./logos/IDH_logo.png" alt="IDH Logo" class="header-logo">
+            </div>
+            National Institute of Infectious Diseases, Sri Lanka
+        </h1>
+
         <h2 class="sub-header-text">Admin login - Patient Queuing System</h2>
         <div class="card2 my-3">
             <div class="card-body">
@@ -180,48 +207,48 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
 
 <script>
     $(function() {
-    $('#login-form').submit(function(e) {
-        e.preventDefault();
-        $('.pop_msg').remove();
-        var _this = $(this);
-        var _el = $('<div>');
-        _el.addClass('pop_msg');
-        _this.find('button').attr('disabled', true);
-        _this.find('button[type="submit"]').text('Logging in...');
-        $.ajax({
-            url: './Actions.php?a=login',
-            method: 'POST',
-            data: $(this).serialize(),
-            dataType: 'JSON',
-            error: function(jqXHR, textStatus, errorThrown) {
-                console.log("AJAX error: " + textStatus + ' : ' + errorThrown);
-                console.log(jqXHR.responseText);
-                _el.addClass('alert alert-danger');
-                _el.text("An error occurred: " + textStatus + ' : ' + errorThrown);
-                _this.prepend(_el);
-                _el.show('slow');
-                _this.find('button').attr('disabled', false);
-                _this.find('button[type="submit"]').text('Login');
-            },
-            success: function(resp) {
-                if (resp.status == 'success') {
-                    _el.addClass('alert alert-success');
-                    setTimeout(() => {
-                        location.replace('./');
-                    }, 2000);
-                } else {
+        $('#login-form').submit(function(e) {
+            e.preventDefault();
+            $('.pop_msg').remove();
+            var _this = $(this);
+            var _el = $('<div>');
+            _el.addClass('pop_msg');
+            _this.find('button').attr('disabled', true);
+            _this.find('button[type="submit"]').text('Logging in...');
+            $.ajax({
+                url: './Actions.php?a=login',
+                method: 'POST',
+                data: $(this).serialize(),
+                dataType: 'JSON',
+                error: function(jqXHR, textStatus, errorThrown) {
+                    console.log("AJAX error: " + textStatus + ' : ' + errorThrown);
+                    console.log(jqXHR.responseText);
                     _el.addClass('alert alert-danger');
+                    _el.text("An error occurred: " + textStatus + ' : ' + errorThrown);
+                    _this.prepend(_el);
+                    _el.show('slow');
+                    _this.find('button').attr('disabled', false);
+                    _this.find('button[type="submit"]').text('Login');
+                },
+                success: function(resp) {
+                    if (resp.status == 'success') {
+                        _el.addClass('alert alert-success');
+                        setTimeout(() => {
+                            location.replace('./');
+                        }, 2000);
+                    } else {
+                        _el.addClass('alert alert-danger');
+                    }
+                    _el.text(resp.msg);
+                    _el.hide();
+                    _this.prepend(_el);
+                    _el.show('slow');
+                    _this.find('button').attr('disabled', false);
+                    _this.find('button[type="submit"]').text('Login');
                 }
-                _el.text(resp.msg);
-                _el.hide();
-                _this.prepend(_el);
-                _el.show('slow');
-                _this.find('button').attr('disabled', false);
-                _this.find('button[type="submit"]').text('Login');
-            }
+            });
         });
     });
-});
-
 </script>
+
 </html>

@@ -196,6 +196,30 @@ $encrypted_unique_person_id = isset($_POST['encrypted_unique_person_id']) ? $_PO
             margin-bottom: 10px;
             margin-right: 10px;
         }
+        .header-text {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .logo-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .header-logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--primary-color);
+        }
     </style>
 </head>
 
@@ -219,6 +243,12 @@ $encrypted_unique_person_id = isset($_POST['encrypted_unique_person_id']) ? $_PO
         <?php endif; ?>
         <div class="card">
             <div class="card-body">
+            <h1 class="header-text">
+            <div class="logo-container">
+                <img src="./logos/IDH_logo.png" alt="IDH Logo" class="header-logo">
+            </div>
+            National Institute of Infectious Diseases, Sri Lanka
+        </h1>
                 <div class="h5 card-title">Get your Queue Number Here</div>
                 <form action="" id="queue-form">
                     <div class="form-group mb-3">

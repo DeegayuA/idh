@@ -59,14 +59,6 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
             background: var(--card-background);
         }
 
-        .header-text {
-            font-weight: 600;
-            font-size: 1.5rem;
-            text-align: center;
-            margin-bottom: 1rem;
-            color: var(--text-color);
-        }
-
         .sub-header-text {
             font-size: 1.2rem;
             text-align: center;
@@ -143,11 +135,41 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
             color: var(--primary-color);
         }
 
+        .header-text {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .logo-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .header-logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--primary-color);
+        }
+
     </style>
 </head>
 <body>
    <div class="container">
-        <h1 class="header-text">National Institute of Infectious Diseases, Sri Lanka</h1>
+        <h1 class="header-text">
+            <div class="logo-container">
+                <img src="./../logos/IDH_logo.png" alt="IDH Logo" class="header-logo">
+            </div>
+            National Institute of Infectious Diseases, Sri Lanka
+        </h1>
         <h2 class="sub-header-text">Doctor Login - Patient Queuing System</h2>
         <div class="card">
             <div class="card-body">
