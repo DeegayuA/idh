@@ -8,16 +8,20 @@ if (session_status() === PHP_SESSION_NONE) {
 require_once('./../DBConnection.php');
 $conn = new DBConnection();
 
-// Fetch active cashier (doctor) IDs
+// Fetch active cashier (doctor) IDs and their queue counts
 $active_cashiers_response = $conn->get_active_cashiers();
 $active_cashiers = json_decode($active_cashiers_response, true)['data'];
 $active_cashier_count = count($active_cashiers);
+
+// Fetch queue counts for each doctor using getQueueCounts function
+$queue_counts_response = $conn->getQueueCounts();
+$queue_counts = json_decode($queue_counts_response, true);
 
 // Define an array to hold doctor colors
 $doctor_colors = array();
 
 // Extract colors from CSS directly from the PHP file
-$php_file = file_get_contents(__FILE__); 
+$php_file = file_get_contents(__FILE__);
 preg_match_all('/--doctor-\d+-color: (.*?);/', $php_file, $matches);
 if ($matches) {
     $doctor_colors = $matches[1];
@@ -26,46 +30,48 @@ if ($matches) {
 // Calculate the number of doctor rooms to display
 $doctor_room_count = min(10, $active_cashier_count); // Limit to maximum 10 rooms
 
-// Prepare the JSON response
+// Prepare the JSON response for doctor rooms
 $response = array("data" => array());
 for ($i = 0; $i < $doctor_room_count; $i++) {
+    // Extract doctor name and queue count
+    $doctor_name = $active_cashiers[$i]['name'];
+    $doctor_queue_count = isset($queue_counts['doctors'][$doctor_name]) ? $queue_counts['doctors'][$doctor_name] : 0;
+
     $response["data"][] = array(
-        "name" => "Doctor Room " . ($i + 1),
+        "name" => $doctor_name,
+        "queue_count" => $doctor_queue_count,
         "color" => $doctor_colors[$i]
     );
 }
-
 ?>
-
 <style>
-   :root {
-    --doctor-1-color: red;
-    --doctor-2-color: green;
-    --doctor-3-color: blue;
-    --doctor-4-color: yellow;
-    --doctor-5-color: pink;
-    --doctor-6-color: orange;
-    --doctor-7-color: purple;
-    --doctor-8-color: cyan;
-    --doctor-9-color: teal;
-    --doctor-10-color: magenta;
-}
-
-@media (prefers-color-scheme: dark) {
     :root {
-        --doctor-1-color: darkred;
-        --doctor-2-color: darkgreen;
-        --doctor-3-color: darkblue;
+        --doctor-1-color: red;
+        --doctor-2-color: green;
+        --doctor-3-color: blue;
         --doctor-4-color: yellow;
         --doctor-5-color: pink;
-        --doctor-6-color: darkorange;
-        --doctor-7-color: indigo;
-        --doctor-8-color: darkcyan;
-        --doctor-9-color: darkslategray;
-        --doctor-10-color: darkmagenta;
+        --doctor-6-color: orange;
+        --doctor-7-color: purple;
+        --doctor-8-color: cyan;
+        --doctor-9-color: teal;
+        --doctor-10-color: magenta;
     }
-}
 
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --doctor-1-color: darkred;
+            --doctor-2-color: darkgreen;
+            --doctor-3-color: darkblue;
+            --doctor-4-color: yellow;
+            --doctor-5-color: pink;
+            --doctor-6-color: darkorange;
+            --doctor-7-color: indigo;
+            --doctor-8-color: darkcyan;
+            --doctor-9-color: darkslategray;
+            --doctor-10-color: darkmagenta;
+        }
+    }
 
     .full-height {
         height: 100vh;
@@ -89,7 +95,6 @@ for ($i = 0; $i < $doctor_room_count; $i++) {
         border-radius: 15px;
         font-size: 1rem;
         padding: 10px;
-
     }
 
     .btn-primary {
@@ -119,47 +124,50 @@ for ($i = 0; $i < $doctor_room_count; $i++) {
 
     .doctor-room {
         flex: auto auto auto;
-        /* Allow elements to shrink but not grow */
         width: 400px;
-        /* Set a fixed width for each doctor room */
         margin: 10px;
-        /* Add some margin for spacing */
     }
 
     .button-section {
         margin: 10px;
     }
 </style>
+
 <div class="container full-height">
     <div class="row full-height center-content">
-        <div class="d-flex flex-wrap ">
-            <?php for ($i = 0; $i < $doctor_room_count; $i++) { ?>
+        <div class="d-flex flex-wrap">
+            <?php for ($i = 1; $i <= $doctor_room_count; $i++) { ?>
                 <div class="doctor-room mb-3 d-flex flex-column align-items-center center-content">
-                    <div class="card shadow card-custom" style="background-color: var(--doctor-<?php echo $i + 1; ?>-color)">
+                    <div class="card shadow card-custom" style="background-color: var(--doctor-<?php echo $i; ?>-color)">
                         <div class="card-header">
-                            <h5 class="card-title text-center"><?php echo isset($active_cashiers[$i]['name']) ? $active_cashiers[$i]['name'] : 'Doctor Room ' . ($i + 1); ?></h5>
+                            <h5 class="card-title text-center">Doctor Room <?php echo $i; ?></h5>
                         </div>
                         <div class="card-body">
                             <div class="text-center mb-4">
-                                <h3 class="card-title mb-0 fs-2" id="customer_name_<?php echo $i + 1; ?>">Unknown</h3>
+                                <h3 class="card-title mb-0 fs-2" id="customer_name_<?php echo $i; ?>">Unknown</h3>
                                 <div class="mt-2">
-                                    <span class="text-muted">Age:</span>
-                                    <span id="customer_age_<?php echo $i + 1; ?>" class="mx-2">N/A</span>
-                                    <span class="text-muted">Sex:</span>
-                                    <span id="customer_sex_<?php echo $i + 1; ?>" class="mx-2">N/A</span>
+                                    <span class="text fw-bold">Age:</span>
+                                    <span id="customer_age_<?php echo $i; ?>" class="mx-2">N/A</span>
+                                    <span class="text fw-bold">Sex:</span>
+                                    <span id="customer_sex_<?php echo $i; ?>" class="mx-2">N/A</span>
                                 </div>
                             </div>
                             <hr>
                             <div class="text-center">
-                                <div class="fs-4 fw-bold mb-3">Queue Number</div>
-                                <b>
-                                    <div class="fs-3 my-2" id="queue_<?php echo $i + 1; ?>">----</div>
-                                </b>
+                                <div class="fs-4 fw-bold mb-3">Queue Information</div>
+                                <div class="mb-2">
+                                    <span class="text fw-light">Queue Number:</span>
+                                    <span class="mx-2" id="queue_<?php echo $i; ?>">----</span>
+                                </div>
+                                <div>
+                                    <span class="text fw-light">Patients in Queue:</span>
+                                    <span class="mx-2" id="total_patients_<?php echo $i; ?>"><?php echo $response['data'][$i - 1]['queue_count']; ?></span>
+                                </div>
                             </div>
                         </div>
-                        <div class="card-footer d-flex justify-content-between ">
-                            <button id="next_queue_<?php echo $i + 1; ?>" class="button-section btn btn-primary btn-custom next_queue"><i class="fa fa-forward"></i> Next</button>
-                            <button id="notify_<?php echo $i + 1; ?>" class="button-section btn btn-secondary btn-custom notify"><i class="fa fa-bullhorn"></i> Notify</button>
+                        <div class="card-footer d-flex justify-content-between">
+                            <button id="next_queue_<?php echo $i; ?>" class="button-section btn btn-primary btn-custom next_queue"><i class="fa fa-forward"></i> Next</button>
+                            <button id="notify_<?php echo $i; ?>" class="button-section btn btn-secondary btn-custom notify"><i class="fa fa-bullhorn"></i> Notify</button>
                         </div>
                     </div>
                 </div>
@@ -167,7 +175,6 @@ for ($i = 0; $i < $doctor_room_count; $i++) {
         </div>
     </div>
 </div>
-
 
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 <script>

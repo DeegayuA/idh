@@ -109,6 +109,7 @@ class Actions extends DBConnection
     }
 // Function: Logs out a doctor by destroying session and redirecting to login page.
 
+
     function d_logout()
     {
         // Function: Logs out a doctor by destroying session and redirecting to login page.
@@ -483,13 +484,8 @@ class Actions extends DBConnection
     // Function: Advances to the next queue and assigns it to a doctor.
     function next_queue()
     {
-         // Retrieves the next available queue.
-    // Checks if the queue has a preferred doctor or matches current doctor.
-    // Updates queue status to indicate it's being serviced.
-    // Decrypts customer data before returning.
-    // Returns next queue details as JSON.
         extract($_POST);
-
+    
         // Select the next queue, prioritizing by queue_id but considering preferred doctor
         $get = $this->query("
             SELECT queue_id, queue, customer_name, age, sex, preferred_doctor 
@@ -498,9 +494,10 @@ class Actions extends DBConnection
             ORDER BY queue_id ASC 
             LIMIT 1
         ");
-
-        @$res = $get->fetchArray();
+    
+        $res = $get->fetchArray(SQLITE3_ASSOC);
         $resp['status'] = 'success';
+    
         if ($res) {
             if ($res['preferred_doctor'] == 0 || $res['preferred_doctor'] == $doctor_id || is_null($res['preferred_doctor'])) {
                 // The next queue item is either for the current doctor or doesn't have a preferred doctor
@@ -508,6 +505,18 @@ class Actions extends DBConnection
                 // Decrypt customer data before returning
                 $res['customer_name'] = $this->decrypt_data($res['customer_name']);
                 $resp['data'] = $res;
+    
+                // Get total queue counts
+                $queueCounts = json_decode($this->getQueueCounts(), true);
+                $totalPatients = $queueCounts['total'];
+                $doctorPreferredPatients = isset($queueCounts['doctors'][$doctor_id]) ? $queueCounts['doctors'][$doctor_id] : 0;
+    
+                // Add total and doctor-preferred patients to the response
+                $resp['queue_count'] = "{$totalPatients}+{$doctorPreferredPatients}";
+    
+                // Include age and sex in the response
+                $resp['data']['age'] = $res['age'];
+                $resp['data']['sex'] = $res['sex'];
             } else {
                 // If the next item has a different preferred doctor, skip it temporarily and check the next one
                 $get_next = $this->query("
@@ -518,23 +527,40 @@ class Actions extends DBConnection
                     ORDER BY queue_id ASC 
                     LIMIT 1
                 ");
-
-                @$res_next = $get_next->fetchArray();
+    
+                $res_next = $get_next->fetchArray(SQLITE3_ASSOC);
                 if ($res_next) {
                     $this->query("UPDATE queue_list SET status = 1 WHERE queue_id = '{$res_next['queue_id']}'");
                     // Decrypt customer data before returning
                     $res_next['customer_name'] = $this->decrypt_data($res_next['customer_name']);
                     $resp['data'] = $res_next;
+    
+                    // Get total queue counts
+                    $queueCounts = json_decode($this->getQueueCounts(), true);
+                    $totalPatients = $queueCounts['total'];
+                    $doctorPreferredPatients = isset($queueCounts['doctors'][$doctor_id]) ? $queueCounts['doctors'][$doctor_id] : 0;
+    
+                    // Add total and doctor-preferred patients to the response
+                    $resp['queue_count'] = "{$totalPatients}+{$doctorPreferredPatients}";
+    
+                    // Include age and sex in the response
+                    $resp['data']['age'] = $res_next['age'];
+                    $resp['data']['sex'] = $res_next['sex'];
                 } else {
                     // No available queue for the current doctor
                     $resp['data'] = null;
+                    $resp['queue_count'] = "0+0"; // No patients in the queue
                 }
             }
         } else {
             $resp['data'] = null;
+            $resp['queue_count'] = "0+0"; // No patients in the queue
         }
+    
         return json_encode($resp);
     }
+    
+    
 
     // Function: Updates the video file in the system.
     function update_video()
@@ -599,6 +625,8 @@ class Actions extends DBConnection
 
         return json_encode($resp);
     }
+
+    
 }
 // Switch statement to execute specific actions based on 'a' parameter.
 // Executes corresponding method based on the value of 'a'.

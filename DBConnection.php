@@ -416,7 +416,7 @@ class DBConnection extends SQLite3
 
             // Query to count queues for each doctor
             $sqlCount = "SELECT COUNT(*) AS doctor_queue_count FROM `queue_list` WHERE `status` = 0 AND `preferred_doctor` = $doctorId";
-            $sqlTotalCount = "SELECT COUNT(*) AS cashier_id, name FROM `cashier_list` WHERE `status` = 1";
+            $sqlTotalCount = "SELECT COUNT(*) AS doctor_queue_count FROM `queue_list` WHERE `status` = 0";
             
             $qryCount = $this->querySingle($sqlCount);
             $qrytotalCount = $this->querySingle($sqlTotalCount);
@@ -432,7 +432,7 @@ class DBConnection extends SQLite3
             'doctors' => $doctorQueueCounts
         ];
 
-        return $response;
+        return json_encode($response);
     }
 
     function __destruct()
@@ -442,5 +442,6 @@ class DBConnection extends SQLite3
 }
 
 $conn = new DBConnection();
+
 ?>
 

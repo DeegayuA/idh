@@ -212,23 +212,27 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
         </style>
 </head>
 <body>
-    <main>
+<main>
         <nav class="navbar navbar-expand-lg navbar-dark bg-primary bg-gradient" id="topNavBar">
             <div class="container">
                 <a class="navbar-brand" href="./">Doctor List View</a>
                 <div>
                     <div class="dropdown">
-                        <button class="btn btn-secondary dropdown-toggle bg-transparent text-light border-0" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
-                            <?php echo $_SESSION['fullname'] ?>
-                        </button>
-                        <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
-                            <li><a class="dropdown-item" href="./../Actions.php?a=d_logout">Logout</a></li>
-                        </ul>
+                        <?php if (isset($_SESSION['fullname'])): ?>
+                            <button class="btn btn-secondary dropdown-toggle bg-transparent text-light border-0" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+                                <?php echo $_SESSION['fullname'] ?>
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+                                <li><a class="dropdown-item" href="./../Actions.php?a=d_logout">Logout</a></li>
+                            </ul>
+                        <?php else: ?>
+                            <a href="./../login.php" class="btn btn-secondary">Login</a>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
         </nav>
-        <div class="container py-3" id="page-container">
+        <div class="py-3" id="page-container">
             <?php 
                 if (isset($_SESSION['flashdata'])):
             ?>
