@@ -405,24 +405,58 @@ class Actions extends DBConnection
         }
         return json_encode($resp);
     }
-
-
     function next_queue()
     {
         extract($_POST);
-        $get = $this->query("SELECT queue_id, queue, customer_name, age, sex FROM queue_list WHERE status = 0 AND date(date_created) = '" . date("Y-m-d") . "' ORDER BY queue_id ASC LIMIT 1");
+    
+        // Select the next queue, prioritizing by queue_id but considering preferred doctor
+        $get = $this->query("
+            SELECT queue_id, queue, customer_name, age, sex, preferred_doctor 
+            FROM queue_list 
+            WHERE status = 0 AND date(date_created) = '" . date("Y-m-d") . "' 
+            ORDER BY queue_id ASC 
+            LIMIT 1
+        ");
+    
         @$res = $get->fetchArray();
         $resp['status'] = 'success';
         if ($res) {
-            $this->query("UPDATE queue_list SET status = 1 WHERE queue_id = '{$res['queue_id']}'");
-            // Decrypt customer data before returning
-            $res['customer_name'] = $this->decrypt_data($res['customer_name']);
-            $resp['data'] = $res;
+            if ($res['preferred_doctor'] == 0 || $res['preferred_doctor'] == $doctor_id || is_null($res['preferred_doctor'])) {
+                // The next queue item is either for the current doctor or doesn't have a preferred doctor
+                $this->query("UPDATE queue_list SET status = 1 WHERE queue_id = '{$res['queue_id']}'");
+                // Decrypt customer data before returning
+                $res['customer_name'] = $this->decrypt_data($res['customer_name']);
+                $resp['data'] = $res;
+            } else {
+                // If the next item has a different preferred doctor, skip it temporarily and check the next one
+                $get_next = $this->query("
+                    SELECT queue_id, queue, customer_name, age, sex, preferred_doctor 
+                    FROM queue_list 
+                    WHERE status = 0 AND date(date_created) = '" . date("Y-m-d") . "' 
+                    AND (preferred_doctor IS NULL OR preferred_doctor = 0 OR preferred_doctor = '$doctor_id') 
+                    ORDER BY queue_id ASC 
+                    LIMIT 1
+                ");
+    
+                @$res_next = $get_next->fetchArray();
+                if ($res_next) {
+                    $this->query("UPDATE queue_list SET status = 1 WHERE queue_id = '{$res_next['queue_id']}'");
+                    // Decrypt customer data before returning
+                    $res_next['customer_name'] = $this->decrypt_data($res_next['customer_name']);
+                    $resp['data'] = $res_next;
+                } else {
+                    // No available queue for the current doctor
+                    $resp['data'] = null;
+                }
+            }
         } else {
-            $resp['data'] = $res;
+            $resp['data'] = null;
         }
         return json_encode($resp);
     }
+    
+    
+    
     
 
 

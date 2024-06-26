@@ -5,6 +5,7 @@ require_once('DBConnection.php');
 require_once('phpqrcode/qrlib.php');
 date_default_timezone_set('Asia/Colombo');
 
+
 // Initialize an array to hold data for encoding
 $dataToEncode = [];
 

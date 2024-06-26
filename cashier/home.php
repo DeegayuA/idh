@@ -32,7 +32,6 @@ require_once('./../DBConnection.php');
         border-radius: 15px;
         font-size: 1rem;
         padding: 10px;
-
     }
 
     .btn-primary {
@@ -105,17 +104,20 @@ require_once('./../DBConnection.php');
         websocket = new WebSocket("ws://<?php echo $_SERVER['SERVER_NAME'] ?>:2306/queuing/php-sockets.php");
     };
     var in_queue = {};
+    var cashier_id = <?php echo json_encode($_SESSION['cashier_id']); ?>;
 
     function get_queue() {
         $.ajax({
             url: './../Actions.php?a=next_queue',
             dataType: 'json',
+            method: 'POST',
+            data: { doctor_id: cashier_id },
             error: function(err) {
                 console.log(err);
             },
             success: function(resp) {
                 if (resp.status) {
-                    if (Object.keys(resp.data).length > 0) {
+                    if (resp.data && Object.keys(resp.data).length > 0) {
                         in_queue = resp.data;
                         update_queue_info(in_queue);
                     } else {
@@ -155,30 +157,28 @@ require_once('./../DBConnection.php');
         });
     });
 
-
-// // ESP32 device
-try {
-    var esp32_websocket = new WebSocket("ws://192.168.4.1:81/");
-  esp32_websocket.onopen = function(event) {
-      console.log('ESP Socket is open!');
-  };
-  esp32_websocket.onclose = function(event) {
-      console.log('ESP Socket has been closed!');
-  };
-  esp32_websocket.onmessage = function(event) {
-      var message = JSON.parse(event.data);
-      if (message.action === "next_queue") {
-          get_queue();
-      } else if (message.action === "notify") {
-          if (in_queue.queue) {
-              update_queue_info(in_queue);
-          } else {
-              alert("No Queue Available");
-          }
-      }
-  };
-} catch(err) {
-  console.warn("ESP32 device not connected:", err);
-};
-
+    // ESP32 device
+    try {
+        var esp32_websocket = new WebSocket("ws://192.168.4.1:81/");
+        esp32_websocket.onopen = function(event) {
+            console.log('ESP Socket is open!');
+        };
+        esp32_websocket.onclose = function(event) {
+            console.log('ESP Socket has been closed!');
+        };
+        esp32_websocket.onmessage = function(event) {
+            var message = JSON.parse(event.data);
+            if (message.action === "next_queue") {
+                get_queue();
+            } else if (message.action === "notify") {
+                if (in_queue.queue) {
+                    update_queue_info(in_queue);
+                } else {
+                    alert("No Queue Available");
+                }
+            }
+        };
+    } catch(err) {
+        console.warn("ESP32 device not connected:", err);
+    }
 </script>
