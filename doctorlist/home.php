@@ -34,6 +34,7 @@ for ($i = 0; $i < $doctor_room_count; $i++) {
         "color" => $doctor_colors[$i]
     );
 }
+
 ?>
 
 <style>
@@ -129,37 +130,36 @@ for ($i = 0; $i < $doctor_room_count; $i++) {
         margin: 10px;
     }
 </style>
-
 <div class="container full-height">
     <div class="row full-height center-content">
         <div class="d-flex flex-wrap ">
-            <?php for ($i = 1; $i <= $doctor_room_count; $i++) { ?>
+            <?php for ($i = 0; $i < $doctor_room_count; $i++) { ?>
                 <div class="doctor-room mb-3 d-flex flex-column align-items-center center-content">
-                    <div class="card shadow card-custom" style="background-color: var(--doctor-<?php echo $i; ?>-color)">
+                    <div class="card shadow card-custom" style="background-color: var(--doctor-<?php echo $i + 1; ?>-color)">
                         <div class="card-header">
-                            <h5 class="card-title text-center">Doctor Room <?php echo $i; ?></h5>
+                            <h5 class="card-title text-center"><?php echo isset($active_cashiers[$i]['name']) ? $active_cashiers[$i]['name'] : 'Doctor Room ' . ($i + 1); ?></h5>
                         </div>
                         <div class="card-body">
                             <div class="text-center mb-4">
-                                <h3 class="card-title mb-0 fs-2" id="customer_name_<?php echo $i; ?>">Unknown</h3>
+                                <h3 class="card-title mb-0 fs-2" id="customer_name_<?php echo $i + 1; ?>">Unknown</h3>
                                 <div class="mt-2">
                                     <span class="text-muted">Age:</span>
-                                    <span id="customer_age_<?php echo $i; ?>" class="mx-2">N/A</span>
+                                    <span id="customer_age_<?php echo $i + 1; ?>" class="mx-2">N/A</span>
                                     <span class="text-muted">Sex:</span>
-                                    <span id="customer_sex_<?php echo $i; ?>" class="mx-2">N/A</span>
+                                    <span id="customer_sex_<?php echo $i + 1; ?>" class="mx-2">N/A</span>
                                 </div>
                             </div>
                             <hr>
                             <div class="text-center">
                                 <div class="fs-4 fw-bold mb-3">Queue Number</div>
                                 <b>
-                                    <div class="fs-3 my-2" id="queue_<?php echo $i; ?>">----</div>
+                                    <div class="fs-3 my-2" id="queue_<?php echo $i + 1; ?>">----</div>
                                 </b>
                             </div>
                         </div>
                         <div class="card-footer d-flex justify-content-between ">
-                            <button id="next_queue_<?php echo $i; ?>" class="button-section btn btn-primary btn-custom next_queue"><i class="fa fa-forward"></i> Next</button>
-                            <button id="notify_<?php echo $i; ?>" class="button-section btn btn-secondary btn-custom notify"><i class="fa fa-bullhorn"></i> Notify</button>
+                            <button id="next_queue_<?php echo $i + 1; ?>" class="button-section btn btn-primary btn-custom next_queue"><i class="fa fa-forward"></i> Next</button>
+                            <button id="notify_<?php echo $i + 1; ?>" class="button-section btn btn-secondary btn-custom notify"><i class="fa fa-bullhorn"></i> Notify</button>
                         </div>
                     </div>
                 </div>
@@ -167,6 +167,7 @@ for ($i = 0; $i < $doctor_room_count; $i++) {
         </div>
     </div>
 </div>
+
 
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 <script>

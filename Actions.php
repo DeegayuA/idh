@@ -1,10 +1,20 @@
+
 <?php
+// Author: Deeghayu Suwahas Adhikari
+// https://deeghayu.netlify.app/
+
+// Function: Class for handling various actions related to the queue management system.
+// This class extends DBConnection for database operations.
+
+
 session_start();
 require_once('DBConnection.php');
 require_once('config.php');
 
 class Actions extends DBConnection
 {
+    // Function: Constructor method for Actions class.
+    // Initializes the encryption key for data encryption and decryption.
     private $encryption_key;
     function __construct()
     {
@@ -13,14 +23,19 @@ class Actions extends DBConnection
         $this->encryption_key = base64_decode($encryption_key);
     }
 
-
+    // Function: Destructor method for Actions class.
+    // Performs cleanup tasks when the object is destroyed.
     function __destruct()
     {
         parent::__destruct();
     }
 
+    // Function: Encrypts data using AES-256-CBC encryption.
     public function encrypt_data($data)
     {
+        // Generates a random initialization vector (IV).
+        // Encrypts the data using AES-256-CBC algorithm with the encryption key and IV.
+        // Returns the encrypted data in base64-encoded format.
         $iv = openssl_random_pseudo_bytes(openssl_cipher_iv_length('aes-256-cbc'));
         $encrypted = openssl_encrypt($data, 'aes-256-cbc', $this->encryption_key, OPENSSL_RAW_DATA, $iv);
 
@@ -31,9 +46,13 @@ class Actions extends DBConnection
         return base64_encode($iv . $encrypted);
     }
 
-
+    // Function: Decrypts data previously encrypted using AES-256-CBC.
     public function decrypt_data($data)
     {
+        // Decodes the base64-encoded data.
+        // Retrieves the IV and encrypted data.
+        // Decrypts the data using AES-256-CBC algorithm with the encryption key and IV.
+        // Returns the decrypted data.
         $data = base64_decode($data);
         if ($data === false) {
             return false; // Failed to decode base64
@@ -50,9 +69,11 @@ class Actions extends DBConnection
 
         return $decrypted;
     }
-
+    // Function: Retrieves a list of active cashiers from the database.
     public function get_active_cashiers()
     {
+        // Constructs SQL query to select active cashiers.
+        // Retrieves and returns the list of active cashiers as JSON.
         $sql = "SELECT * FROM `cashier_list` WHERE `status` = 1";
         $qry = $this->query($sql);
         $cashiers = [];
@@ -63,9 +84,13 @@ class Actions extends DBConnection
         $resp['data'] = $cashiers;
         return json_encode($resp);
     }
+    // Function: Handles login functionality for doctors.
 
     function d_login()
     {
+        // Validates doctor's login credentials.
+        // Sets session variables upon successful login.
+        // Returns login status and message as JSON.
         extract($_POST);
         $sql = "SELECT * FROM doctor_list where username = '{$username}' and `password` = '" . md5($password) . "' ";
         @$qry = $this->query($sql)->fetchArray();
@@ -82,16 +107,21 @@ class Actions extends DBConnection
         }
         return json_encode($resp);
     }
+// Function: Logs out a doctor by destroying session and redirecting to login page.
 
     function d_logout()
     {
+        // Function: Logs out a doctor by destroying session and redirecting to login page.
         session_destroy();
         header("location:./doctorlist/login.php");
     }
 
-
+// Function: Handles login functionality for users.
     function login()
     {
+        // Validates user's login credentials.
+        // Sets session variables upon successful login.
+        // Returns login status and message as JSON.
         extract($_POST);
         $sql = "SELECT * FROM user_list where username = '{$username}' and `password` = '" . md5($password) . "' ";
         @$qry = $this->query($sql)->fetchArray();
@@ -108,13 +138,22 @@ class Actions extends DBConnection
         }
         return json_encode($resp);
     }
+    
+    // Function: Logs out a user by destroying session and redirecting to login page.
     function logout()
     {
+        // Logs out a user by destroying session and redirecting to login page.
         session_destroy();
         header("location:./login.php");
     }
+
+    // Function: Handles login functionality for cashiers.
     function c_login()
     {
+        // Validates cashier's login credentials.
+        // Sets session variables upon successful login.
+        // Returns login status and message as JSON.
+
         extract($_POST);
         $sql = "SELECT * FROM cashier_list where cashier_id = '{$cashier_id}'";
         @$qry = $this->query($sql)->fetchArray();
@@ -137,15 +176,23 @@ class Actions extends DBConnection
         }
         return json_encode($resp);
     }
+
+    // Function: Logs out a cashier by destroying session and redirecting to cashier page.
     function c_logout()
     {
+        // Logs out a cashier by destroying session and updating log status.
         session_destroy();
         $this->query("UPDATE `cashier_list` set log_status = 0 where cashier_id  = {$_SESSION['cashier_id']}");
         header("location:./cashier");
     }
 
+    // Function: Saves user details to the database.
     function save_user()
     {
+       // Processes form data to save or update user details.
+    // Validates input and checks for existing usernames.
+    // Encrypts password if it's a new user.
+    // Returns operation status and message as JSON.
         extract($_POST);
         $data = "";
         $cols = [];
@@ -222,8 +269,12 @@ class Actions extends DBConnection
         return json_encode($resp);
     }
 
+    // Function: Deletes a user from the database.
     function delete_user()
     {
+        // Deletes a user from the database.
+        // Returns operation status and message as JSON.
+        
         extract($_POST);
 
         @$delete = $this->query("DELETE FROM `user_list` where rowid = '{$id}'");
@@ -237,8 +288,13 @@ class Actions extends DBConnection
         }
         return json_encode($resp);
     }
+
+    // Function: Updates user credentials in the database.
     function update_credentials()
     {
+        // Updates user credentials in the database.
+        // Validates old password before updating.
+        // Returns operation status and message as JSON.
         extract($_POST);
         $data = "";
         foreach ($_POST as $k => $v) {
@@ -273,8 +329,13 @@ class Actions extends DBConnection
         }
         return json_encode($resp);
     }
+
+    // Function: Saves cashier details to the database.
     function save_cashier()
     {
+        // Processes form data to save or update cashier details.
+        // Validates input and checks for existing cashiers.
+        // Returns operation status and message as JSON.
         extract($_POST);
         $data = "";
         foreach ($_POST as $k => $v) {
@@ -321,8 +382,13 @@ class Actions extends DBConnection
         }
         return json_encode($resp);
     }
+
+    // Function: Deletes a cashier from the database.
     function delete_cashier()
     {
+        // Deletes a cashier from the database.
+        // Checks if the cashier is in use before deletion.
+        // Returns operation status and message as JSON.
         extract($_POST);
         $get = $this->query("SELECT * FROM `cashier_list` where cashier_id = '{$id}'");
         @$res = $get->fetchArray();
@@ -350,8 +416,14 @@ class Actions extends DBConnection
 
         return json_encode($resp);
     }
+
+    // Function: Saves a new queue to the database.
     function save_queue()
     {
+       // Generates a unique queue code.
+    // Encrypts customer data before saving.
+    // Inserts queue details into the database.
+    // Returns operation status, message, and newly inserted queue ID as JSON.
         $code = sprintf("%'.04d", 1);
         while (true) {
             $chk = $this->query("SELECT count(queue_id) `count` FROM `queue_list` where queue = '" . $code . "' and date(date_created) = '" . date('Y-m-d') . "' ")->fetchArray()['count'];
@@ -361,20 +433,20 @@ class Actions extends DBConnection
                 break;
             }
         }
-    
+
         // Encrypt customer data before saving
         $encrypted_customer_name = $this->encrypt_data($_POST['customer_name']);
         $encrypted_phone_number = $this->encrypt_data($_POST['phone_number']);
         $encrypted_id_number = $this->encrypt_data($_POST['encrypted_id_number']);
-    
+
         $preferred_doctor = isset($_POST['preferred_doctor']) ? $_POST['preferred_doctor'] : NULL;
 
         // Generate the encrypted_unique_person_id
         $encrypted_unique_person_id = $this->encrypt_data($_POST['customer_name'] . $_POST['sex'] . $_POST['encrypted_id_number'] . $_POST['phone_number']);
-    
+
         $sql = "INSERT INTO `queue_list` (`queue`,`customer_name`, `status`, `age`, `sex`, `phone_number`, `encrypted_id_number`, `encrypted_unique_person_id`, `preferred_doctor`) 
                 VALUES('{$code}', '{$encrypted_customer_name}', 0, '{$_POST['age']}', '{$_POST['sex']}', '{$encrypted_phone_number}', '{$encrypted_id_number}', '{$encrypted_unique_person_id}', '{$preferred_doctor}')";
-    
+
         $save = $this->query($sql);
         if ($save) {
             $resp['status'] = 'success';
@@ -385,11 +457,13 @@ class Actions extends DBConnection
         }
         return json_encode($resp);
     }
-    
-    
 
+// Function: Retrieves queue details based on queue ID from the database.
     function get_queue()
     {
+         // Retrieves queue details using queue ID.
+    // Decrypts customer data before returning.
+    // Returns queue details as JSON.
         extract($_POST);
         $qry = $this->query("SELECT * FROM `queue_list` where queue_id = '{$qid}' ");
         @$res = $qry->fetchArray();
@@ -405,10 +479,17 @@ class Actions extends DBConnection
         }
         return json_encode($resp);
     }
+
+    // Function: Advances to the next queue and assigns it to a doctor.
     function next_queue()
     {
+         // Retrieves the next available queue.
+    // Checks if the queue has a preferred doctor or matches current doctor.
+    // Updates queue status to indicate it's being serviced.
+    // Decrypts customer data before returning.
+    // Returns next queue details as JSON.
         extract($_POST);
-    
+
         // Select the next queue, prioritizing by queue_id but considering preferred doctor
         $get = $this->query("
             SELECT queue_id, queue, customer_name, age, sex, preferred_doctor 
@@ -417,7 +498,7 @@ class Actions extends DBConnection
             ORDER BY queue_id ASC 
             LIMIT 1
         ");
-    
+
         @$res = $get->fetchArray();
         $resp['status'] = 'success';
         if ($res) {
@@ -437,7 +518,7 @@ class Actions extends DBConnection
                     ORDER BY queue_id ASC 
                     LIMIT 1
                 ");
-    
+
                 @$res_next = $get_next->fetchArray();
                 if ($res_next) {
                     $this->query("UPDATE queue_list SET status = 1 WHERE queue_id = '{$res_next['queue_id']}'");
@@ -454,14 +535,16 @@ class Actions extends DBConnection
         }
         return json_encode($resp);
     }
-    
-    
-    
-    
 
-
+    // Function: Updates the video file in the system.
     function update_video()
     {
+         // Handles file upload for updating video content.
+    // Validates file upload and MIME type.
+    // Moves uploaded file to designated directory.
+    // Removes old video file if exists.
+    // Sets flash data for success or failure message.
+    // Returns operation status and message as JSON.
         extract($_FILES);
 
         // Check for file upload errors
@@ -517,6 +600,8 @@ class Actions extends DBConnection
         return json_encode($resp);
     }
 }
+// Switch statement to execute specific actions based on 'a' parameter.
+// Executes corresponding method based on the value of 'a'.
 $a = isset($_GET['a']) ? $_GET['a'] : '';
 $action = new Actions();
 switch ($a) {

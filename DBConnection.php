@@ -92,9 +92,9 @@ class DBConnection extends SQLite3
         $this->exec("INSERT or IGNORE INTO `user_list` VALUES (1,'Administrator','admin',md5('admin123'),1, CURRENT_TIMESTAMP)");
 
         $this->exec("INSERT or IGNORE INTO `doctor_list` VALUES (1,'Doctor','doc',md5('doc123'),0,1, CURRENT_TIMESTAMP)");
-        // doctor_Rooms_6
+        // doctor_Rooms_#
         $startRoom = 1;
-        $totalRooms = 10;
+        $totalRooms = 5;
 
         // Loop through the rooms and insert records
         for ($i = 0; $i < $totalRooms; $i++) {
@@ -399,6 +399,42 @@ class DBConnection extends SQLite3
         return $result;
     }
 
+    public function getQueueCounts()
+    {
+        // Initialize counters
+        $totalQueueCount = 0;
+        $doctorQueueCounts = [];
+
+        // Query all active cashiers (doctors)
+        $sql = "SELECT cashier_id, name FROM `cashier_list` WHERE `status` = 1";
+        $qry = $this->query($sql);
+
+        // Loop through each active cashier (doctor)
+        while ($row = $qry->fetchArray(SQLITE3_ASSOC)) {
+            $doctorId = $row['cashier_id'];
+            $doctorName = $row['name'];
+
+            // Query to count queues for each doctor
+            $sqlCount = "SELECT COUNT(*) AS doctor_queue_count FROM `queue_list` WHERE `status` = 0 AND `preferred_doctor` = $doctorId";
+            $sqlTotalCount = "SELECT COUNT(*) AS cashier_id, name FROM `cashier_list` WHERE `status` = 1";
+            
+            $qryCount = $this->querySingle($sqlCount);
+            $qrytotalCount = $this->querySingle($sqlTotalCount);
+
+            // Store doctor queue count
+            $doctorQueueCounts[$doctorName] = $qryCount;
+            $totalQueueCount = $qrytotalCount; // Increment total queue count
+        }
+
+        // Prepare response
+        $response = [
+            'total' => $totalQueueCount,
+            'doctors' => $doctorQueueCounts
+        ];
+
+        return $response;
+    }
+
     function __destruct()
     {
         $this->close();
@@ -406,7 +442,5 @@ class DBConnection extends SQLite3
 }
 
 $conn = new DBConnection();
-
-
 ?>
 
