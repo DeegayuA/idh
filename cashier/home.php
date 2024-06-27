@@ -54,6 +54,68 @@ require_once('./../DBConnection.php');
         border: 2px solid var(--primary-hover);
         color: var(--text-color);
     }
+    .full-height {
+    height: 100vh;
+}
+
+.center-content {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.card-custom {
+    width: 100%;
+    max-width: 400px;
+    border-radius: 15px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+.btn-custom {
+    width: 100%;
+    border-radius: 15px;
+    font-size: 1rem;
+    padding: 10px;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-hover);
+}
+
+.btn-secondary {
+    background-color: transparent;
+    border: 1px solid var(--primary-color);
+    transition: all 0.3s ease-in-out;
+    color: var(--text-color);
+}
+
+.btn-secondary:hover {
+    background-color: transparent;
+    border: 2px solid var(--primary-hover);
+    color: var(--text-color);
+}
+
+.queue-info {
+    margin-top: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-top: 1px solid #ddd;
+    padding-top: 1rem;
+}
+
+.queue-count {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
 </style>
 
 <div class="container full-height">
@@ -78,6 +140,11 @@ require_once('./../DBConnection.php');
                         <div class="fs-4 fw-bold mb-3">Queue Number</div>
                         <b><div class="fs-3 my-2" id="queue">----</div></b>
                     </div>
+                    <div class="mt-4 w-100 text-center queue-info">
+    <h6>Total Patients Waiting: <span id="total_patients_count" class="queue-count">Loading...</span></h6>
+    <h6>Patients in Your Queue: <span id="specific_queue_count" class="queue-count">Loading...</span></h6>
+</div>
+
 
                 </div>
             </div>
@@ -142,22 +209,53 @@ require_once('./../DBConnection.php');
             cashier_id: '<?php echo $_SESSION['cashier_id'] ?>',
             qid: queue_data.queue_id
         }));
+
+        updateQueueCounts(); // Update queue counts when new queue info is received
     }
 
     $(function() {
         $('#next_queue').click(function() {
             get_queue();
+            updateQueueCounts();
         });
         $('#notify').click(function() {
             if (in_queue.queue) {
                 update_queue_info(in_queue);
+                updateQueueCounts();
             } else {
                 alert("No Queue Available");
             }
         });
+
+        // Function to update total patients waiting and specific queue counts
+        function updateQueueCounts() {
+            $.ajax({
+                url: './../Actions.php?a=getQueueCounts',
+                method: 'POST',
+                dataType: 'json',
+                success: function(resp) {
+                    // Update total patients waiting
+                    if (resp.total !== undefined) {
+                        $('#total_patients_count').text(resp.total);
+                    }
+                    // Update specific doctor queue count if available
+                    if (resp.doctors && resp.doctors['Room' + cashier_id]) {
+                        $('#specific_queue_count').text(resp.doctors['Room' + cashier_id]);
+                    } else {
+                        $('#specific_queue_count').text(0);
+                    }
+                },
+                error: function(err) {
+                    console.error('Error fetching queue counts:', err);
+                }
+            });
+        }
+
+        // Initial call to update queue counts
+        updateQueueCounts();
     });
 
-    // ESP32 device
+    // ESP32 device integration (similar as before)
     try {
         var esp32_websocket = new WebSocket("ws://192.168.4.1:81/");
         esp32_websocket.onopen = function(event) {

@@ -1,9 +1,9 @@
 <?php
 // Include DBConnection.php to access getQueueCounts function
-require_once('DBConnection.php');
+require_once('Actions.php');
 
 // Create an instance of DBConnection
-$conn = new DBConnection();
+$conn = new Actions();
 
 // Call getQueueCounts function to get JSON-encoded response
 $response = $conn->getQueueCounts();

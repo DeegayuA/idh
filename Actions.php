@@ -107,7 +107,7 @@ class Actions extends DBConnection
         }
         return json_encode($resp);
     }
-// Function: Logs out a doctor by destroying session and redirecting to login page.
+    // Function: Logs out a doctor by destroying session and redirecting to login page.
 
 
     function d_logout()
@@ -117,7 +117,7 @@ class Actions extends DBConnection
         header("location:./doctorlist/login.php");
     }
 
-// Function: Handles login functionality for users.
+    // Function: Handles login functionality for users.
     function login()
     {
         // Validates user's login credentials.
@@ -139,7 +139,7 @@ class Actions extends DBConnection
         }
         return json_encode($resp);
     }
-    
+
     // Function: Logs out a user by destroying session and redirecting to login page.
     function logout()
     {
@@ -190,10 +190,10 @@ class Actions extends DBConnection
     // Function: Saves user details to the database.
     function save_user()
     {
-       // Processes form data to save or update user details.
-    // Validates input and checks for existing usernames.
-    // Encrypts password if it's a new user.
-    // Returns operation status and message as JSON.
+        // Processes form data to save or update user details.
+        // Validates input and checks for existing usernames.
+        // Encrypts password if it's a new user.
+        // Returns operation status and message as JSON.
         extract($_POST);
         $data = "";
         $cols = [];
@@ -275,7 +275,7 @@ class Actions extends DBConnection
     {
         // Deletes a user from the database.
         // Returns operation status and message as JSON.
-        
+
         extract($_POST);
 
         @$delete = $this->query("DELETE FROM `user_list` where rowid = '{$id}'");
@@ -421,10 +421,10 @@ class Actions extends DBConnection
     // Function: Saves a new queue to the database.
     function save_queue()
     {
-       // Generates a unique queue code.
-    // Encrypts customer data before saving.
-    // Inserts queue details into the database.
-    // Returns operation status, message, and newly inserted queue ID as JSON.
+        // Generates a unique queue code.
+        // Encrypts customer data before saving.
+        // Inserts queue details into the database.
+        // Returns operation status, message, and newly inserted queue ID as JSON.
         $code = sprintf("%'.04d", 1);
         while (true) {
             $chk = $this->query("SELECT count(queue_id) `count` FROM `queue_list` where queue = '" . $code . "' and date(date_created) = '" . date('Y-m-d') . "' ")->fetchArray()['count'];
@@ -459,12 +459,12 @@ class Actions extends DBConnection
         return json_encode($resp);
     }
 
-// Function: Retrieves queue details based on queue ID from the database.
+    // Function: Retrieves queue details based on queue ID from the database.
     function get_queue()
     {
-         // Retrieves queue details using queue ID.
-    // Decrypts customer data before returning.
-    // Returns queue details as JSON.
+        // Retrieves queue details using queue ID.
+        // Decrypts customer data before returning.
+        // Returns queue details as JSON.
         extract($_POST);
         $qry = $this->query("SELECT * FROM `queue_list` where queue_id = '{$qid}' ");
         @$res = $qry->fetchArray();
@@ -495,8 +495,9 @@ class Actions extends DBConnection
             LIMIT 1
         ");
     
+        $resp = array('status' => 'success', 'data' => null);
+    
         $res = $get->fetchArray(SQLITE3_ASSOC);
-        $resp['status'] = 'success';
     
         if ($res) {
             if ($res['preferred_doctor'] == 0 || $res['preferred_doctor'] == $doctor_id || is_null($res['preferred_doctor'])) {
@@ -505,18 +506,6 @@ class Actions extends DBConnection
                 // Decrypt customer data before returning
                 $res['customer_name'] = $this->decrypt_data($res['customer_name']);
                 $resp['data'] = $res;
-    
-                // Get total queue counts
-                $queueCounts = json_decode($this->getQueueCounts(), true);
-                $totalPatients = $queueCounts['total'];
-                $doctorPreferredPatients = isset($queueCounts['doctors'][$doctor_id]) ? $queueCounts['doctors'][$doctor_id] : 0;
-    
-                // Add total and doctor-preferred patients to the response
-                $resp['queue_count'] = "{$totalPatients}+{$doctorPreferredPatients}";
-    
-                // Include age and sex in the response
-                $resp['data']['age'] = $res['age'];
-                $resp['data']['sex'] = $res['sex'];
             } else {
                 // If the next item has a different preferred doctor, skip it temporarily and check the next one
                 $get_next = $this->query("
@@ -534,27 +523,8 @@ class Actions extends DBConnection
                     // Decrypt customer data before returning
                     $res_next['customer_name'] = $this->decrypt_data($res_next['customer_name']);
                     $resp['data'] = $res_next;
-    
-                    // Get total queue counts
-                    $queueCounts = json_decode($this->getQueueCounts(), true);
-                    $totalPatients = $queueCounts['total'];
-                    $doctorPreferredPatients = isset($queueCounts['doctors'][$doctor_id]) ? $queueCounts['doctors'][$doctor_id] : 0;
-    
-                    // Add total and doctor-preferred patients to the response
-                    $resp['queue_count'] = "{$totalPatients}+{$doctorPreferredPatients}";
-    
-                    // Include age and sex in the response
-                    $resp['data']['age'] = $res_next['age'];
-                    $resp['data']['sex'] = $res_next['sex'];
-                } else {
-                    // No available queue for the current doctor
-                    $resp['data'] = null;
-                    $resp['queue_count'] = "0+0"; // No patients in the queue
                 }
             }
-        } else {
-            $resp['data'] = null;
-            $resp['queue_count'] = "0+0"; // No patients in the queue
         }
     
         return json_encode($resp);
@@ -562,15 +532,17 @@ class Actions extends DBConnection
     
     
 
+
+
     // Function: Updates the video file in the system.
     function update_video()
     {
-         // Handles file upload for updating video content.
-    // Validates file upload and MIME type.
-    // Moves uploaded file to designated directory.
-    // Removes old video file if exists.
-    // Sets flash data for success or failure message.
-    // Returns operation status and message as JSON.
+        // Handles file upload for updating video content.
+        // Validates file upload and MIME type.
+        // Moves uploaded file to designated directory.
+        // Removes old video file if exists.
+        // Sets flash data for success or failure message.
+        // Returns operation status and message as JSON.
         extract($_FILES);
 
         // Check for file upload errors
@@ -626,7 +598,45 @@ class Actions extends DBConnection
         return json_encode($resp);
     }
 
-    
+    // Function: Retrieves queue counts for each doctor and total queue count.
+    public function getQueueCounts()
+    {
+        // Initialize counters
+        $totalQueueCount = 0;
+        $doctorQueueCounts = [];
+
+        // Query all active cashiers (doctors)
+        $sql = "SELECT cashier_id, name FROM `cashier_list` WHERE `status` = 1";
+        $qry = $this->query($sql);
+
+        // Query to count the total number of patients in the queue
+        $sqlTotalCount = "SELECT COUNT(*) AS total_queue_count FROM `queue_list` WHERE `status` = 0";
+        $qryTotalCount = $this->querySingle($sqlTotalCount);
+
+        // Get total queue count
+        $totalQueueCount = $qryTotalCount;
+
+        // Loop through each active cashier (doctor)
+        while ($row = $qry->fetchArray(SQLITE3_ASSOC)) {
+            $doctorId = $row['cashier_id'];
+            $doctorName = $row['name'];
+
+            // Query to count queues for each doctor
+            $sqlCount = "SELECT COUNT(*) AS doctor_queue_count FROM `queue_list` WHERE `status` = 0 AND `preferred_doctor` = $doctorId";
+            $qryCount = $this->querySingle($sqlCount);
+
+            // Store doctor queue count
+            $doctorQueueCounts[$doctorName] = $qryCount;
+        }
+
+        // Prepare response
+        $response = [
+            'total' => $totalQueueCount,
+            'doctors' => $doctorQueueCounts
+        ];
+
+        return json_encode($response);
+    }
 }
 // Switch statement to execute specific actions based on 'a' parameter.
 // Executes corresponding method based on the value of 'a'.
@@ -680,6 +690,9 @@ switch ($a) {
         break;
     case 'get_active_cashiers':
         echo $action->get_active_cashiers();
+        break;
+    case 'getQueueCounts':
+        echo $action->getQueueCounts();
         break;
 
     default:
