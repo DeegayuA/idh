@@ -139,7 +139,7 @@ for ($i = 0; $i < $doctor_room_count; $i++) {
             <?php for ($i = 1; $i <= $doctor_room_count; $i++) { ?>
                 <div class="doctor-room mb-3 d-flex flex-column align-items-center center-content">
                     <div class="card shadow card-custom" style="background-color: var(--doctor-<?php echo $i; ?>-color)">
-                        <div class="card-header">
+                        <div class="">
                             <h5 class="card-title text-center">Doctor Room <?php echo $i; ?></h5>
                         </div>
                         <div class="card-body">
@@ -165,7 +165,7 @@ for ($i = 0; $i < $doctor_room_count; $i++) {
                                 </div>
                             </div>
                         </div>
-                        <div class="card-footer d-flex justify-content-between">
+                        <div class="d-flex justify-content-between">
                             <button id="next_queue_<?php echo $i; ?>" class="button-section btn btn-primary btn-custom next_queue"><i class="fa fa-forward"></i> Next</button>
                             <button id="notify_<?php echo $i; ?>" class="button-section btn btn-secondary btn-custom notify"><i class="fa fa-bullhorn"></i> Notify</button>
                         </div>
