@@ -175,63 +175,65 @@ class DBConnection extends SQLite3
         return $decrypted;
     }
 
-    public function getPatientHistory($identifier, $limit)
-    {
-        // Step 1: Decrypt all mobile numbers and NIC numbers from the database and store in JSON
+    public function getPatientHistory($identifier, $limit) {
+        // Step 1: Decrypt the first 90,000 mobile numbers and NIC numbers from the database and store in JSON
         $decrypted_identifiers = [];
-        $result = $this->query("SELECT queue_id, phone_number, encrypted_id_number FROM `queue_list`");
+        $result = $this->query("SELECT queue_id, phone_number, encrypted_id_number FROM `queue_list` LIMIT 90000");
+    
         while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
             $decrypted_phone_number = $this->decrypt_data($row['phone_number']);
             $decrypted_id_number = $this->decrypt_data($row['encrypted_id_number']);
-
+    
             if ($decrypted_phone_number !== false) {
-                $decrypted_identifiers[$row['queue_id']] = $decrypted_phone_number;
+                $decrypted_identifiers[$row['queue_id']]['phone_number'] = $decrypted_phone_number;
             }
-
+    
             if ($decrypted_id_number !== false) {
-                $decrypted_identifiers[$row['queue_id']] = $decrypted_id_number;
+                $decrypted_identifiers[$row['queue_id']]['id_number'] = $decrypted_id_number;
             }
         }
-
-
+    
         // Step 2: Find exact matches of the entered identifier
         $exact_matches = [];
-        foreach ($decrypted_identifiers as $id => $decrypted_identifier) {
-            if ($decrypted_identifier === $identifier) {
-                $exact_matches[$id] = $decrypted_identifier;
+        foreach ($decrypted_identifiers as $id => $decrypted_data) {
+            if (in_array($identifier, $decrypted_data)) {
+                $exact_matches[$id] = $decrypted_data;
             }
         }
-
+    
         // Step 3: Collect all matching entries
         $all_rows = [];
-        foreach ($exact_matches as $id => $exact_match) {
+        foreach ($exact_matches as $id => $match_data) {
             $result = $this->query("SELECT * FROM `queue_list` WHERE `queue_id` = '{$id}' ORDER BY `date_created` DESC");
             while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
                 $row['customer_name'] = $this->decrypt_data($row['customer_name']);
                 $row['phone_number'] = $this->decrypt_data($row['phone_number']);
                 $row['encrypted_id_number'] = $this->decrypt_data($row['encrypted_id_number']);
-
+    
                 $all_rows[] = $row;
             }
         }
-
+    
         // Step 4: Sort the collected rows by date_created in descending order
         usort($all_rows, function ($a, $b) {
             return strtotime($b['date_created']) - strtotime($a['date_created']);
         });
-
-        // Step 5: Remove the most recent entry
-        array_shift($all_rows);
-
+    
+        // Check if there are more than one entry
+        if (count($all_rows) > 1) {
+            // Step 5: Remove the most recent entry
+            array_shift($all_rows);
+        }
+    
         // Step 6: Limit the results to the specified number of entries
         $rows = array_slice($all_rows, 0, $limit);
-
+    
         // Step 7: Destroy the JSON containing decrypted identifiers
         unset($decrypted_identifiers);
-
+    
         return $rows;
     }
-
+    
 
     public function getPatientDataByUniquePersonID($unique_person_id)
     {

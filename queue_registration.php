@@ -4,7 +4,7 @@ ini_set('display_errors', 1);
 session_start();
 require_once('DBConnection.php');
 require_once('config.php');
-
+    
 // Define the $page variable
 $page = isset($page) ? $page : 'Home'; // Provide a default value
 
@@ -373,11 +373,6 @@ $encrypted_unique_person_id = isset($_POST['encrypted_unique_person_id']) ? $_PO
                             $('#encrypted_id_number').val(data.encrypted_id_number);
                             $('#phone_number').val(data.phone_number);
                             // Add other fields to populate as necessary
-                        } else if (response.status === 'not_found') {
-                            // If no match found, do nothing or provide feedback to the user
-                            // Example: $('#customer_name').val(''); // Clear the field
-                        } else {
-                            // Handle other response statuses as needed
                         }
                     },
                     error: function(jqXHR, textStatus, errorThrown) {
