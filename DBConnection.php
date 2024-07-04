@@ -28,6 +28,7 @@ class DBConnection extends SQLite3
         global $encryption_key;
         $this->encryption_key = base64_decode($encryption_key);
 
+
         // Check if database file exists, if not, create it
         if (!file_exists(DB_FILE)) {
             touch(DB_FILE); // Create an empty file
@@ -37,6 +38,9 @@ class DBConnection extends SQLite3
         $this->openEncryptedDB(DB_FILE, 'DeE@2oo1');
         $this->createFunction('md5', 'my_udf_md5');
         $this->exec("PRAGMA foreign_keys = ON;");
+        $this->exec("PRAGMA cache_size = -10000;");
+        $this->exec("PRAGMA journal_mode = WAL;");
+
 
         $this->exec("CREATE TABLE IF NOT EXISTS `user_list` (
             `user_id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
@@ -87,6 +91,10 @@ class DBConnection extends SQLite3
         )");
         
 
+        // Add indexes in the constructor of DBConnection class
+        $this->exec("CREATE INDEX IF NOT EXISTS idx_encrypted_id_number ON `queue_list` (`encrypted_id_number`);");
+        $this->exec("CREATE INDEX IF NOT EXISTS idx_phone_number ON `queue_list` (`phone_number`);");
+        $this->exec("CREATE INDEX IF NOT EXISTS idx_preferred_doctor ON `queue_list` (`preferred_doctor`);");
 
 
         $this->exec("INSERT or IGNORE INTO `user_list` VALUES (1,'Administrator','admin',md5('admin123'),1, CURRENT_TIMESTAMP)");
@@ -175,24 +183,25 @@ class DBConnection extends SQLite3
         return $decrypted;
     }
 
-    public function getPatientHistory($identifier, $limit) {
+    public function getPatientHistory($identifier, $limit)
+    {
         // Step 1: Decrypt the first 90,000 mobile numbers and NIC numbers from the database and store in JSON
         $decrypted_identifiers = [];
-        $result = $this->query("SELECT queue_id, phone_number, encrypted_id_number FROM `queue_list` LIMIT 90000");
-    
+        $result = $this->query("SELECT queue_id, phone_number, encrypted_id_number FROM `queue_list` LIMIT 180000");
+
         while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
             $decrypted_phone_number = $this->decrypt_data($row['phone_number']);
             $decrypted_id_number = $this->decrypt_data($row['encrypted_id_number']);
-    
+
             if ($decrypted_phone_number !== false) {
                 $decrypted_identifiers[$row['queue_id']]['phone_number'] = $decrypted_phone_number;
             }
-    
+
             if ($decrypted_id_number !== false) {
                 $decrypted_identifiers[$row['queue_id']]['id_number'] = $decrypted_id_number;
             }
         }
-    
+
         // Step 2: Find exact matches of the entered identifier
         $exact_matches = [];
         foreach ($decrypted_identifiers as $id => $decrypted_data) {
@@ -200,7 +209,7 @@ class DBConnection extends SQLite3
                 $exact_matches[$id] = $decrypted_data;
             }
         }
-    
+
         // Step 3: Collect all matching entries
         $all_rows = [];
         foreach ($exact_matches as $id => $match_data) {
@@ -209,39 +218,39 @@ class DBConnection extends SQLite3
                 $row['customer_name'] = $this->decrypt_data($row['customer_name']);
                 $row['phone_number'] = $this->decrypt_data($row['phone_number']);
                 $row['encrypted_id_number'] = $this->decrypt_data($row['encrypted_id_number']);
-    
+
                 $all_rows[] = $row;
             }
         }
-    
+
         // Step 4: Sort the collected rows by date_created in descending order
         usort($all_rows, function ($a, $b) {
             return strtotime($b['date_created']) - strtotime($a['date_created']);
         });
-    
+
         // Check if there are more than one entry
         if (count($all_rows) > 1) {
             // Step 5: Remove the most recent entry
             array_shift($all_rows);
         }
-    
+
         // Step 6: Limit the results to the specified number of entries
         $rows = array_slice($all_rows, 0, $limit);
-    
+
         // Step 7: Destroy the JSON containing decrypted identifiers
         unset($decrypted_identifiers);
-    
+
         return $rows;
     }
-    
+
 
     public function getPatientDataByUniquePersonID($unique_person_id)
     {
 
-    
+
         // Step 1: Fetch all data associated with the provided unique_person_id
         $all_rows = [];
-        $result = $this->query("SELECT * FROM `queue_list` WHERE `encrypted_unique_person_id` = '{$unique_person_id}' ORDER BY `date_created` DESC");
+        $result = $this->query("SELECT * FROM `queue_list` WHERE `encrypted_unique_person_id` = '{$unique_person_id}' ORDER BY `date_created` DESC LIMIT 180000");
         while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
             // Decrypt encrypted fields
             $row['customer_name'] = $this->decrypt_data($row['customer_name']);
@@ -249,15 +258,15 @@ class DBConnection extends SQLite3
             $row['encrypted_id_number'] = $this->decrypt_data($row['encrypted_id_number']); // Decrypt encrypted ID number
             $all_rows[] = $row;
         }
-    
+
         // Step 2: Sort the collected rows by date_created in descending order
         usort($all_rows, function ($a, $b) {
             return strtotime($b['date_created']) - strtotime($a['date_created']);
         });
-    
+
         return $all_rows;
     }
-    
+
 
     public function fillQRCodeList($encrypted_unique_person_id, $qrFileName)
     {
@@ -267,7 +276,7 @@ class DBConnection extends SQLite3
         // Insert data into the qrcode_list table
         $sql = "INSERT INTO `qrcode_list` (`encrypted_unique_person_id`, `file_name`, `date_created`) 
                 VALUES ('$encrypted_unique_person_id', '$qrFileName', '$currentDateTime')";
-        
+
         $result = $this->exec($sql);
 
         // Check if the insertion was successful
@@ -285,15 +294,15 @@ class DBConnection extends SQLite3
         $result = $this->query("SELECT encrypted_unique_person_id FROM `qrcode_list` ORDER BY `date_created` ASC");
         while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
             $decryptedId = $this->decrypt_data($row['encrypted_unique_person_id']);
-          
+
             if ($decryptedId !== false) {
                 $decryptedIds[] = $decryptedId;
             }
         }
-    
+
         // Step 2: Decrypt the provided encrypted_unique_person_id parameter
         $decrypted_param = $this->decrypt_data($encrypted_unique_person_id);
-    
+
         // Step 3: Find the first matching decrypted parameter
         $matchingId = null;
         foreach ($decryptedIds as $id) {
@@ -303,7 +312,7 @@ class DBConnection extends SQLite3
                 break;
             }
         }
-    
+
         // Step 4: If a matching ID is found, retrieve the corresponding row from the database
         if ($matchingId !== null) {
             $sql = "SELECT file_name FROM `qrcode_list` WHERE `encrypted_unique_person_id` = :encrypted_unique_person_id ORDER BY `date_created` ASC LIMIT 1";
@@ -317,42 +326,42 @@ class DBConnection extends SQLite3
                 return $row['file_name'];
             }
         }
-    
+
         // Step 5: If no matching row was found, return null
         // Debugging: Output a message indicating no matching row was found
         echo "No matching row found for encrypted_unique_person_id: " . $encrypted_unique_person_id;
         return null;
     }
-    
-    
+
+
 
     public function checkDecryptedUniquePersonIDExists($encrypted_unique_person_id)
-{
-    // Decrypt the provided encrypted_unique_person_id
-    $decrypted_unique_person_id = $this->decrypt_data($encrypted_unique_person_id);
-    
-    // Prepare the SQL statement to check if the decrypted_unique_person_id exists in the qrcode_list
-    $sql = "SELECT COUNT(*) AS count FROM `qrcode_list` WHERE `encrypted_unique_person_id` = :decrypted_unique_person_id";
-    
-    // Prepare the statement
-    $stmt = $this->prepare($sql);
-    $stmt->bindValue(':decrypted_unique_person_id', $decrypted_unique_person_id, SQLITE3_TEXT);
-    
-    // Execute the statement
-    $result = $stmt->execute();
-    
-    // Fetch the row
-    $row = $result->fetchArray(SQLITE3_ASSOC);
-    
-    // Check if a matching row was found
-    if ($row['count'] > 0) {
-        return true; // Return true if the decrypted_unique_person_id exists
-    } else {
-        return false; // Return false if the decrypted_unique_person_id does not exist
-    }
-}
+    {
+        // Decrypt the provided encrypted_unique_person_id
+        $decrypted_unique_person_id = $this->decrypt_data($encrypted_unique_person_id);
 
-    
+        // Prepare the SQL statement to check if the decrypted_unique_person_id exists in the qrcode_list
+        $sql = "SELECT COUNT(*) AS count FROM `qrcode_list` WHERE `encrypted_unique_person_id` = :decrypted_unique_person_id";
+
+        // Prepare the statement
+        $stmt = $this->prepare($sql);
+        $stmt->bindValue(':decrypted_unique_person_id', $decrypted_unique_person_id, SQLITE3_TEXT);
+
+        // Execute the statement
+        $result = $stmt->execute();
+
+        // Fetch the row
+        $row = $result->fetchArray(SQLITE3_ASSOC);
+
+        // Check if a matching row was found
+        if ($row['count'] > 0) {
+            return true; // Return true if the decrypted_unique_person_id exists
+        } else {
+            return false; // Return false if the decrypted_unique_person_id does not exist
+        }
+    }
+
+
 
     public function updateLastScannedDatetime($encrypted_unique_person_id)
     {
@@ -361,20 +370,20 @@ class DBConnection extends SQLite3
         $timezone = new DateTimeZone(tZone); // Use the defined timezone
         $currentDateTime = new DateTime('now', $timezone);
         $formattedDateTime = $currentDateTime->format('Y-m-d H:i:s');
-    
+
         // Prepare the SQL statement
         $sql = "UPDATE qrcode_list SET last_scanned_datetime = :currentDateTime WHERE encrypted_unique_person_id = :encrypted_unique_person_id";
-    
+
         // Prepare the statement
         $stmt = $this->prepare($sql);
-    
+
         // Bind parameters
         $stmt->bindValue(':currentDateTime', $formattedDateTime, SQLITE3_TEXT);
         $stmt->bindValue(':encrypted_unique_person_id', $encrypted_unique_person_id, SQLITE3_TEXT);
-    
+
         // Execute the statement
         $result = $stmt->execute();
-    
+
         // Check if the update was successful
         if ($result) {
             return true; // Success
@@ -408,6 +417,3 @@ class DBConnection extends SQLite3
 }
 
 $conn = new DBConnection();
-
-?>
-

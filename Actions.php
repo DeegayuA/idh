@@ -421,44 +421,60 @@ class Actions extends DBConnection
     // Function: Saves a new queue to the database.
     function save_queue()
     {
-        // Generates a unique queue code.
-        // Encrypts customer data before saving.
-        // Inserts queue details into the database.
-        // Returns operation status, message, and newly inserted queue ID as JSON.
-        $code = sprintf("%'.04d", 1);
-        while (true) {
-            $chk = $this->query("SELECT count(queue_id) `count` FROM `queue_list` where queue = '" . $code . "' and date(date_created) = '" . date('Y-m-d') . "' ")->fetchArray()['count'];
-            if ($chk > 0) {
-                $code = sprintf("%'.04d", abs($code) + 1);
-            } else {
-                break;
-            }
-        }
-
+        // Generate a unique queue code efficiently
+        $code = $this->generateUniqueQueueCode();
+    
         // Encrypt customer data before saving
         $encrypted_customer_name = $this->encrypt_data($_POST['customer_name']);
         $encrypted_phone_number = $this->encrypt_data($_POST['phone_number']);
         $encrypted_id_number = $this->encrypt_data($_POST['encrypted_id_number']);
-
+    
         $preferred_doctor = isset($_POST['preferred_doctor']) ? $_POST['preferred_doctor'] : NULL;
-
+    
         // Generate the encrypted_unique_person_id
         $encrypted_unique_person_id = $this->encrypt_data($_POST['customer_name'] . $_POST['sex'] . $_POST['encrypted_id_number'] . $_POST['phone_number']);
-
+    
+        // Prepare the SQL statement for insertion
         $sql = "INSERT INTO `queue_list` (`queue`,`customer_name`, `status`, `age`, `sex`, `phone_number`, `encrypted_id_number`, `encrypted_unique_person_id`, `preferred_doctor`) 
                 VALUES('{$code}', '{$encrypted_customer_name}', 0, '{$_POST['age']}', '{$_POST['sex']}', '{$encrypted_phone_number}', '{$encrypted_id_number}', '{$encrypted_unique_person_id}', '{$preferred_doctor}')";
-
+    
+        // Execute the SQL statement
         $save = $this->query($sql);
+    
+        // Prepare the response
+        $resp = [];
         if ($save) {
             $resp['status'] = 'success';
-            $resp['id'] = $this->lastInsertRowID(); // Change this line
+            $resp['id'] = $this->lastInsertRowID();
         } else {
             $resp['status'] = 'failed';
             $resp['msg'] = "An error occurred. Error: " . $this->lastErrorMsg();
         }
+    
+        // Return the response as JSON
         return json_encode($resp);
     }
-
+    
+    function generateUniqueQueueCode()
+    {
+        $code = sprintf("%'.04d", 1); // Initialize with the first code
+        $existing_codes = [];
+    
+        // Retrieve existing codes for today
+        $date = date('Y-m-d');
+        $result = $this->query("SELECT queue FROM `queue_list` WHERE date(date_created) = '{$date}'");
+        while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+            $existing_codes[] = $row['queue'];
+        }
+    
+        // Find a unique code
+        while (in_array($code, $existing_codes)) {
+            $code = sprintf("%'.04d", abs($code) + 1);
+        }
+    
+        return $code;
+    }
+    
     // Function: Retrieves queue details based on queue ID from the database.
     function get_queue()
     {

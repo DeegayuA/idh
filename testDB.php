@@ -50,7 +50,7 @@ function insertDataInBatches($numRows, $batchSize) {
 
             // Insert into queue_list
             $stmtQueue = $conn->prepare("INSERT INTO `queue_list` (`queue`, `customer_name`, `status`, `age`, `sex`, `phone_number`, `encrypted_id_number`, `encrypted_unique_person_id`) 
-                                VALUES (?, ?, 0, ?, ?, ?, ?, ?)");
+                                VALUES (?, ?, 1, ?, ?, ?, ?, ?)");
             $stmtQueue->bindValue(1, 'Q' . rand(1000, 9999), SQLITE3_TEXT);
             $stmtQueue->bindValue(2, $encryptedName, SQLITE3_TEXT);
             $stmtQueue->bindValue(3, $entry['age'], SQLITE3_INTEGER);
