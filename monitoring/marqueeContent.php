@@ -46,10 +46,18 @@ if ($firstPatientDateResult) {
     $daysSinceStart = 0;
 }
 
+// Define the new news date
+$newNewsDate = date('Y-m-d'); // Get the current date in 'YYYY-MM-DD' format
+
 // Update local news
-$localNews = [
-    "English" => "Did you know? National Institute of Infectious Diseases has treated over {$totalPatients} patients successfully since {$firstPatientDate}. Currently, there are {$totalPatientsInQueue} patients in the queue.",
-    "Sinhala" => "ඔබ දන්නවාද? ජාතික බෝවන රෝග විද්‍යායතනය, {$totalPatients} කට වැඩි රෝගීන් සාර්ථකව ප්‍රතිකාර කර ඇත. පළමු රෝගියා ඇතුළත් වූ දිනය: {$firstPatientDate}. මේ වන විට පෝලිම තුළ රෝගීන් සංඛ්‍යාව: {$totalPatientsInQueue}."
+$localNewsEnglish = [
+    "This is a pilot project between the National Institute of Infectious Diseases and the University of Kelaniya, started on {$newNewsDate}.",
+    "Did you know? National Institute of Infectious Diseases has treated over {$totalPatients} patients successfully using this system. Currently, there are {$totalPatientsInQueue} patients in the queue."
+];
+
+$localNewsSinhala = [
+    "මෙය ජාතික බෝවන රෝග විද්‍යායතනය සහ කැලණිය විශ්වවිද්‍යාලය මගින්, {$newNewsDate} දින ආරම්භ කරන ලද මෙය නියමු ව්‍යාපෘතියකි.",
+    "ඔබ දන්නවාද? ජාතික බෝවන රෝග විද්‍යායතනය, ඒදින සිට {$totalPatients} කට වැඩි රෝගීන් සාර්ථකව මෙම ව්‍යාපෘතිය මගින් ප්‍රතිකාර කර ඇත. මේ වන විට පෝලිම තුළ රෝගීන් සංඛ්‍යාව: {$totalPatientsInQueue}."
 ];
 
 $response = [
@@ -57,7 +65,10 @@ $response = [
     "totalDoctors" => $totalDoctors,
     "totalPatientsInQueue" => $totalPatientsInQueue,
     "daysSinceStart" => $daysSinceStart,
-    "localNews" => $localNews
+    "localNews" => [
+        "English" => implode(" &nbsp; | &nbsp; ", $localNewsEnglish),
+        "Sinhala" => implode(" &nbsp; | &nbsp; ", $localNewsSinhala)
+    ]
 ];
 
 echo json_encode($response);

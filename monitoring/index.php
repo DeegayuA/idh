@@ -220,9 +220,8 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
                 dataType: 'json',
                 success: function(response) {
                     var marqueeContent = `
-                     <span class="mx-5">පුවත: ${response.localNews.Sinhala}</span>
+                        <span class="mx-5">පුවත: ${response.localNews.Sinhala}</span>
                         <span class="mx-5">News: ${response.localNews.English}</span>
-                       
                     `;
                     $('.marquee-content').html(marqueeContent);
                 },

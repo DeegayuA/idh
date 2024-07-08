@@ -41,6 +41,8 @@ class DBConnection extends SQLite3
         $this->exec("PRAGMA cache_size = -10000;");
         $this->exec("PRAGMA journal_mode = WAL;");
 
+        $this->createFunction('decrypt_data', [$this, 'decrypt_data']);
+
 
         $this->exec("CREATE TABLE IF NOT EXISTS `user_list` (
             `user_id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
@@ -185,7 +187,7 @@ class DBConnection extends SQLite3
 
     public function getPatientHistory($identifier, $limit)
     {
-        // Step 1: Decrypt the first 90,000 mobile numbers and NIC numbers from the database and store in JSON
+        // Step 1: Decrypt the first 180,000 mobile numbers and NIC numbers from the database and store in JSON
         $decrypted_identifiers = [];
         $result = $this->query("SELECT queue_id, phone_number, encrypted_id_number FROM `queue_list` LIMIT 180000");
 
@@ -289,9 +291,9 @@ class DBConnection extends SQLite3
 
     public function searchByQRCodeFileName($encrypted_unique_person_id)
     {
-        // Step 1: Decrypt all encrypted_unique_person_id values from the database and store them in an array
+        // Step 1: Decrypt last 6 month encrypted_unique_person_id values from the database and store them in an array
         $decryptedIds = [];
-        $result = $this->query("SELECT encrypted_unique_person_id FROM `qrcode_list` ORDER BY `date_created` ASC");
+        $result = $this->query("SELECT encrypted_unique_person_id FROM `qrcode_list` ORDER BY `date_created` ASC LIMIT 180000");
         while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
             $decryptedId = $this->decrypt_data($row['encrypted_unique_person_id']);
 
