@@ -162,34 +162,6 @@ if (!isset($_GET['id']) && isset($_POST['encrypted_unique_person_id'])) {
             flex-direction: column;
         }
 
-        .spinner-overlay {
-    display: none; /* Initially hidden */
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(255, 255, 255, 0.8);
-    z-index: 9999; /* High z-index to overlay everything */
-    justify-content: center;
-    align-items: center;
-  }
-
-  .spinner {
-    border: 4px solid rgba(0, 0, 0, 0.1);
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    border-left-color: #4b79a1;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
         .modal-header,
         .modal-body,
         .modal-footer {

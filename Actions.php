@@ -620,39 +620,43 @@ class Actions extends DBConnection
         // Initialize counters
         $totalQueueCount = 0;
         $doctorQueueCounts = [];
-
+    
+        // Get today's date in YYYY-MM-DD format
+        $todayDate = date('Y-m-d');
+    
+        // Query to count the total number of patients in the queue for today
+        $sqlTotalCount = "SELECT COUNT(*) AS total_queue_count FROM `queue_list` WHERE `status` = 0 AND DATE(`date_created`) = '$todayDate'";
+        $qryTotalCount = $this->querySingle($sqlTotalCount);
+        $totalQueueCount = $qryTotalCount;
+    
         // Query all active cashiers (doctors)
         $sql = "SELECT cashier_id, name FROM `cashier_list` WHERE `status` = 1";
         $qry = $this->query($sql);
-
-        // Query to count the total number of patients in the queue
-        $sqlTotalCount = "SELECT COUNT(*) AS total_queue_count FROM `queue_list` WHERE `status` = 0";
-        $qryTotalCount = $this->querySingle($sqlTotalCount);
-
-        // Get total queue count
-        $totalQueueCount = $qryTotalCount;
-
+    
         // Loop through each active cashier (doctor)
         while ($row = $qry->fetchArray(SQLITE3_ASSOC)) {
             $doctorId = $row['cashier_id'];
             $doctorName = $row['name'];
-
-            // Query to count queues for each doctor
-            $sqlCount = "SELECT COUNT(*) AS doctor_queue_count FROM `queue_list` WHERE `status` = 0 AND `preferred_doctor` = $doctorId";
+    
+            // Query to count queues for each doctor for today
+            $sqlCount = "SELECT COUNT(*) AS doctor_queue_count FROM `queue_list` WHERE `status` = 0 AND `preferred_doctor` = $doctorId AND DATE(`date_created`) = '$todayDate'";
             $qryCount = $this->querySingle($sqlCount);
-
+    
             // Store doctor queue count
             $doctorQueueCounts[$doctorName] = $qryCount;
         }
-
+    
         // Prepare response
         $response = [
             'total' => $totalQueueCount,
             'doctors' => $doctorQueueCounts
         ];
-
+    
         return json_encode($response);
     }
+    
+    
+    
 }
 // Switch statement to execute specific actions based on 'a' parameter.
 // Executes corresponding method based on the value of 'a'.
