@@ -30,22 +30,33 @@
     }
 
     :root {
-      --doctor-1-color: red;
-      --doctor-2-color: green;
-      --doctor-3-color: blue;
-      --doctor-4-color: yellow;
-      --doctor-5-color: purple;
-    }
+    --doctor-1-color: #E57373; /* Light Red */
+    --doctor-2-color: #81C784; /* Light Green */
+    --doctor-3-color: #64B5F6; /* Light Blue */
+    --doctor-4-color: #FFF176; /* Light Yellow */
+    --doctor-5-color: #F06292; /* Light Pink */
+    --doctor-6-color: #FFB74D; /* Light Orange */
+    --doctor-7-color: #9575CD; /* Light Purple */
+    --doctor-8-color: #4DD0E1; /* Light Cyan */
+    --doctor-9-color: #4DB6AC; /* Light Teal */
+    --doctor-10-color: #BA68C8; /* Light Magenta */
+}
 
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --doctor-1-color: darkred;
-        --doctor-2-color: darkgreen;
-        --doctor-3-color: darkblue;
-        --doctor-4-color: sienna;
-        --doctor-5-color: rebeccapurple;
-      }
+@media (prefers-color-scheme: dark) {
+    :root {
+        --doctor-1-color: #D32F2F; /* Dark Red */
+        --doctor-2-color: #388E3C; /* Dark Green */
+        --doctor-3-color: #1976D2; /* Dark Blue */
+        --doctor-4-color: #FBC02D; /* Dark Yellow */
+        --doctor-5-color: #E91E63; /* Dark Pink */
+        --doctor-6-color: #F57C00; /* Dark Orange */
+        --doctor-7-color: #512DA8; /* Dark Purple */
+        --doctor-8-color: #0097A7; /* Dark Cyan */
+        --doctor-9-color: #00796B; /* Dark Teal */
+        --doctor-10-color: #8E24AA; /* Dark Magenta */
     }
+}
+
 
     html,
     body,
