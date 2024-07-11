@@ -477,7 +477,7 @@ $encrypted_unique_person_id = isset($_POST['encrypted_unique_person_id']) ? $_PO
                             if (resp.status == 'success') {
                                 uni_modal("Your Queue", "get_queue.php?success=true&id=" + resp.id);
                                 $('#uni_modal').on('hide.bs.modal', function(e) {
-                                    location.reload();
+                                    
                                 });
 
                             } else if (resp.status == 'failed' && !!resp.msg) {

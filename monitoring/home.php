@@ -30,37 +30,56 @@
     }
 
     :root {
-    --doctor-1-color: #E57373; /* Light Red */
-    --doctor-2-color: #81C784; /* Light Green */
-    --doctor-3-color: #64B5F6; /* Light Blue */
-    --doctor-4-color: #FFF176; /* Light Yellow */
-    --doctor-5-color: #F06292; /* Light Pink */
-    --doctor-6-color: #FFB74D; /* Light Orange */
-    --doctor-7-color: #9575CD; /* Light Purple */
-    --doctor-8-color: #4DD0E1; /* Light Cyan */
-    --doctor-9-color: #4DB6AC; /* Light Teal */
-    --doctor-10-color: #BA68C8; /* Light Magenta */
-}
-
-@media (prefers-color-scheme: dark) {
-    :root {
-        --doctor-1-color: #D32F2F; /* Dark Red */
-        --doctor-2-color: #388E3C; /* Dark Green */
-        --doctor-3-color: #1976D2; /* Dark Blue */
-        --doctor-4-color: #FBC02D; /* Dark Yellow */
-        --doctor-5-color: #E91E63; /* Dark Pink */
-        --doctor-6-color: #F57C00; /* Dark Orange */
-        --doctor-7-color: #512DA8; /* Dark Purple */
-        --doctor-8-color: #0097A7; /* Dark Cyan */
-        --doctor-9-color: #00796B; /* Dark Teal */
-        --doctor-10-color: #8E24AA; /* Dark Magenta */
+      --doctor-1-color: #E57373;
+      /* Light Red */
+      --doctor-2-color: #81C784;
+      /* Light Green */
+      --doctor-3-color: #64B5F6;
+      /* Light Blue */
+      --doctor-4-color: #FFF176;
+      /* Light Yellow */
+      --doctor-5-color: #F06292;
+      /* Light Pink */
+      --doctor-6-color: #FFB74D;
+      /* Light Orange */
+      --doctor-7-color: #9575CD;
+      /* Light Purple */
+      --doctor-8-color: #4DD0E1;
+      /* Light Cyan */
+      --doctor-9-color: #4DB6AC;
+      /* Light Teal */
+      --doctor-10-color: #BA68C8;
+      /* Light Magenta */
     }
-}
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --doctor-1-color: #D32F2F;
+        /* Dark Red */
+        --doctor-2-color: #388E3C;
+        /* Dark Green */
+        --doctor-3-color: #1976D2;
+        /* Dark Blue */
+        --doctor-4-color: #FBC02D;
+        /* Dark Yellow */
+        --doctor-5-color: #E91E63;
+        /* Dark Pink */
+        --doctor-6-color: #F57C00;
+        /* Dark Orange */
+        --doctor-7-color: #512DA8;
+        /* Dark Purple */
+        --doctor-8-color: #0097A7;
+        /* Dark Cyan */
+        --doctor-9-color: #00796B;
+        /* Dark Teal */
+        --doctor-10-color: #8E24AA;
+        /* Dark Magenta */
+      }
+    }
 
 
     html,
-    body,
-    .container-fluid {
+    body {
       height: 100%;
       margin: 0;
       padding: 0;
@@ -74,7 +93,7 @@
     }
 
     #monitor-holder {
-      min-height: 100vh;
+      /* min-height: 100vh; */
       background-color: var(--background-color);
     }
 
@@ -157,7 +176,7 @@
     }
 
     #serving-field {
-      flex: 1;
+      flex: 2;
       max-width: 25%;
     }
 
@@ -179,7 +198,6 @@
     .doctor-room {
       flex: auto auto auto;
       width: 400px;
-      margin: 10px;
       border-radius: 15px;
       overflow: hidden;
     }
@@ -226,6 +244,30 @@
         display: none;
       }
     }
+
+    .footer{
+      padding: 0 5rem;
+    }
+    .footer-logos {
+  text-align: center;
+  margin-top: 2rem;
+}
+
+.footer-logos img {
+  height: 50px;
+  width: auto;
+  margin: 10px;
+}
+
+.QR-logos img {
+  height: 100px;
+  width: 100px;
+  aspect-ratio: 1;
+}
+.list-group-item{
+  margin: 0;
+}
+
   </style>
 </head>
 
@@ -273,13 +315,26 @@
             ?>
             <video id="loop-vid" src="./../video/<?php echo $video ?>" loop muted class="w-100 h-100"></video>
           </div>
-          <div id="datetimefield" class="w-100 col-auto">
-            <div class="fs-1 text-center time fw-bold"></div>
-            <div class="fs-5 text-center date fw-bold"></div>
-          </div>
+
         </div>
       </div>
     </div>
+    <div class="footer d-flex justify-content-between align-items-center py-4">
+  <div id="datetimefield" class="text-center">
+    <div class="fs-1 fw-bold time"></div>
+    <div class="fs-5 fw-bold date"></div>
+  </div>
+  <div class="footer-logos">
+    <span>Powered by EDIC UOK</span>
+    <div class="d-flex align-items-center justify-content-center">
+      <img src="./../logos/EDICWebLogo.png" alt="EDIC Web Logo">
+      <img src="./../logos/university-of-kelaniya-logo.png" alt="University of Kelaniya Logo">
+    </div>
+  </div>
+  <div class="QR-logos">
+    <img src="./../logos/QR.png" alt="qr" style="height: 100px; width: 100px;">
+  </div>
+</div>
   </div>
 
   <script>

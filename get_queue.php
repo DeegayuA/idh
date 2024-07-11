@@ -181,7 +181,7 @@ if (!isset($_GET['id']) && isset($_POST['encrypted_unique_person_id'])) {
             background: var(--card-background);
             padding: 20px;
             width: 100%;
-            max-width: 500px;
+            max-width: 700px;
         }
 
         .btn-primary {
