@@ -10,10 +10,15 @@
 #define OLED_RESET    -1 // Reset pin # (or -1 if sharing Arduino reset pin)
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-const char* ssid = "ESP32_Hotspot";      // Hotspot SSID
-const char* password = "12345678";       // Hotspot password
-
+const char *ssid = "IDH_QMS_by_EDIC_UOK";
+const char* password = "12345678";      
+String serverIPAddress = "172.20.10.2";
 WebSocketsServer webSocket = WebSocketsServer(81);
+
+// RGB LED Pins
+const int LED_PIN_RED = 32;
+const int LED_PIN_GREEN = 33;
+const int LED_PIN_BLUE = 26;
 
 const int buttonPin1 = 12;  // GPIO pin for button 1
 const int buttonPin2 = 13;  // GPIO pin for button 2

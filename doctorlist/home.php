@@ -157,62 +157,61 @@ function adjustBrightness($hex, $steps)
         margin: 10px;
     }
     @media screen and (prefers-color-scheme: light) {
+<?php for ($i = 1; $i <= $doctor_room_count; $i++) { ?>
+    .btn-primary-<?php echo $i; ?> {
+        background-color: var(--doctor-<?php echo $i; ?>-btn-color);
+        filter: contrast(1.6) brightness(0.9);
+    }
 
-<?php for ($i = 1; $i <= $doctor_room_count; $i++) { ?>.btn-primary-<?php echo $i; ?> {
-    background-color: var(--doctor-<?php echo $i; ?>-btn-color);
-    filter: contrast(1.6) brightness(0.9);
-}
+    .btn-primary-<?php echo $i; ?>:hover {
+        background-color: var(--doctor-<?php echo $i; ?>-btn-hover);
+        filter: contrast(1.3) brightness(1.2);
+    }
 
-.btn-primary-<?php echo $i; ?>:hover {
-    background-color: var(--doctor-<?php echo $i; ?>-btn-hover);
-    filter: contrast(1.3) brightness(1.2);
-}
+    .btn-secondary-<?php echo $i; ?> {
+        border: 2px solid var(--doctor-<?php echo $i; ?>-btn-color);
+        color: var(--doctor-<?php echo $i; ?>-btn-color);
+        /* Added text color for secondary button */
+        filter: contrast(1.6) brightness(0.9);
+    }
 
-.btn-secondary-<?php echo $i; ?> {
-    border: 2px solid var(--doctor-<?php echo $i; ?>-btn-color);
-    color: var(--doctor-<?php echo $i; ?>-btn-color);
-    /* Added text color for secondary button */
-    filter: contrast(1.6) brightness(0.9);
-}
-
-.btn-secondary-<?php echo $i; ?>:hover {
-    border: 2px solid var(--doctor-<?php echo $i; ?>-btn-hover);
-    color: var(--doctor-<?php echo $i; ?>-btn-hover);
-    /* Updated text color on hover */
-    filter: contrast(1.3) brightness(1.2);
-}
-
+    .btn-secondary-<?php echo $i; ?>:hover {
+        border: 2px solid var(--doctor-<?php echo $i; ?>-btn-hover);
+        color: var(--doctor-<?php echo $i; ?>-btn-hover);
+        /* Updated text color on hover */
+        filter: contrast(1.3) brightness(1.2);
+    }
 <?php } ?>
 }
 
 @media screen and (prefers-color-scheme: dark) {
+<?php for ($i = 1; $i <= $doctor_room_count; $i++) { ?>
+    .btn-primary-<?php echo $i; ?> {
+        background-color: var(--doctor-<?php echo $i; ?>-btn-color);
+        filter: contrast(1.5) brightness(1.5);
+    }
 
-<?php for ($i = 1; $i <= $doctor_room_count; $i++) { ?>.btn-primary-<?php echo $i; ?> {
-    background-color: var(--doctor-<?php echo $i; ?>-btn-color);
-    filter: contrast(1.5) brightness(1.5);
-}
+    .btn-primary-<?php echo $i; ?>:hover {
+        background-color: var(--doctor-<?php echo $i; ?>-btn-hover);
+        filter: contrast(1.6) brightness(1.4);
+    }
 
-.btn-primary-<?php echo $i; ?>:hover {
-    background-color: var(--doctor-<?php echo $i; ?>-btn-hover);
-    filter: contrast(1.6) brightness(1.4);
-}
+    .btn-secondary-<?php echo $i; ?> {
+        border: 2px solid var(--doctor-<?php echo $i; ?>-btn-color);
+        color: var(--doctor-<?php echo $i; ?>-btn-color);
+        /* Added text color for secondary button */
+        filter: contrast(1.5) brightness(1.5);
+    }
 
-.btn-secondary-<?php echo $i; ?> {
-    border: 2px solid var(--doctor-<?php echo $i; ?>-btn-color);
-    color: var(--doctor-<?php echo $i; ?>-btn-color);
-    /* Added text color for secondary button */
-    filter: contrast(1.5) brightness(1.5);
-}
-
-.btn-secondary-<?php echo $i; ?>:hover {
-    border: 2px solid var(--doctor-<?php echo $i; ?>-btn-hover);
-    color: var(--doctor-<?php echo $i; ?>-btn-hover);
-    /* Updated text color on hover */
-    filter: contrast(1.6) brightness(1.4);
-}
-
+    .btn-secondary-<?php echo $i; ?>:hover {
+        border: 2px solid var(--doctor-<?php echo $i; ?>-btn-hover);
+        color: var(--doctor-<?php echo $i; ?>-btn-hover);
+        /* Updated text color on hover */
+        filter: contrast(1.6) brightness(1.4);
+    }
 <?php } ?>
 }
+
     
 </style>
 
@@ -392,7 +391,7 @@ function adjustBrightness($hex, $steps)
 
         // ESP32 WebSocket Integration
         try {
-            var esp32_websocket = new WebSocket("ws://192.168.4.1:81/");
+            var esp32_websocket = new WebSocket("ws://192.168.137.130:81/");
 
             esp32_websocket.onopen = function(event) {
                 console.log('ESP Socket is open!');

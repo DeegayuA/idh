@@ -1,4 +1,3 @@
-#include "AiEsp32RotaryEncoder.h"
 #include "Arduino.h"
 #include <Wire.h>
 #include <Adafruit_GFX.h>
@@ -14,22 +13,16 @@
 #define OLED_RESET -1
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-const char *ssid = "IDH_QMS_by_EDIC_UOK";
-const char *password = "12345678";
-const char *debugSsid = "iPhone";       // Debug WiFi SSID
-const char *debugPassword = "20010123";  // Debug WiFi Password
-String serverIPAddress = "172.20.10.2";
+const char *debugSsid = "EDIC 2";       // Debug WiFi SSID
+const char *debugPassword = "00000000"; // Debug WiFi Password
+String serverIPAddress = "172.16.21.27";
 
-WebSocketsServer webSocket = WebSocketsServer(82);
+WebSocketsServer webSocket = WebSocketsServer(81);
 
-// Rotary Encoder Pins
-#define ROTARY_ENCODER_A_PIN 13
-#define ROTARY_ENCODER_B_PIN 12
-#define ROTARY_ENCODER_BUTTON_PIN 14
-#define ROTARY_ENCODER_VCC_PIN -1
-#define ROTARY_ENCODER_STEPS 4
-
-AiEsp32RotaryEncoder rotaryEncoder = AiEsp32RotaryEncoder(ROTARY_ENCODER_A_PIN, ROTARY_ENCODER_B_PIN, ROTARY_ENCODER_BUTTON_PIN, ROTARY_ENCODER_VCC_PIN, ROTARY_ENCODER_STEPS);
+// Button Pins
+#define BUTTON_FORWARD_PIN 13
+#define BUTTON_BACKWARD_PIN 12
+#define BUTTON_PRESS_PIN 14
 
 // RGB LED Pins
 const int LED_PIN_RED = 32;
@@ -40,7 +33,6 @@ bool pcConnected = false;
 
 const unsigned long doublePressThreshold = 300; // Threshold for double press detection
 unsigned long lastPressTime = 0;
-unsigned long lastEncoderReadTime = 0;
 
 // Simulated database data
 String doctorNames[10];
@@ -48,23 +40,16 @@ String doctorColors[10];
 int numDoctors = 0;
 int currentDoctorIndex = 0;
 
-// Forward declaration of the ISR function
-void IRAM_ATTR readEncoderISR();
-
 void setup() {
-  pinMode(ROTARY_ENCODER_BUTTON_PIN, INPUT_PULLUP);
+  pinMode(BUTTON_FORWARD_PIN, INPUT_PULLUP);
+  pinMode(BUTTON_BACKWARD_PIN, INPUT_PULLUP);
+  pinMode(BUTTON_PRESS_PIN, INPUT_PULLUP);
 
   pinMode(LED_PIN_RED, OUTPUT);
   pinMode(LED_PIN_GREEN, OUTPUT);
   pinMode(LED_PIN_BLUE, OUTPUT);
 
   Serial.begin(115200);
-
-  rotaryEncoder.begin();
-  rotaryEncoder.setup(readEncoderISR);
-  rotaryEncoder.setBoundaries(0, 1000, false);
-  rotaryEncoder.setAcceleration(250); // Adjust as needed for desired response
-rotaryEncoder.setEncoderSteps(1); // Set the steps per click to improve accuracy
 
   if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
     Serial.println(F("SSD1306 allocation failed"));
@@ -88,7 +73,6 @@ rotaryEncoder.setEncoderSteps(1); // Set the steps per click to improve accuracy
   Serial.println();
   Serial.print("Connected to WiFi. IP address: ");
   Serial.println(WiFi.localIP());
-  // serverIPAddress = WiFi.localIP().toString();
   fetchDoctorData();
 
   webSocket.begin();
@@ -97,8 +81,27 @@ rotaryEncoder.setEncoderSteps(1); // Set the steps per click to improve accuracy
 
 void loop() {
   webSocket.loop();
+  display.clearDisplay();
 
-  if (webSocket.connectedClients() > 0) {
+  // Handle button press with high priority
+  if (digitalRead(BUTTON_PRESS_PIN) == LOW) {
+    handleButtonPress();
+  }
+
+  // Handle forward and backward button presses
+  if (digitalRead(BUTTON_FORWARD_PIN) == LOW) {
+    handleForwardButton();
+  }
+
+  if (digitalRead(BUTTON_BACKWARD_PIN) == LOW) {
+    handleBackwardButton();
+  }
+
+  delay(10);
+}
+
+void checkPCConnection() {
+    if (webSocket.connectedClients() > 0) {
     if (!pcConnected) {
       showFullScreenMessage("PC Connected");
       delay(2000);
@@ -110,79 +113,59 @@ void loop() {
       showFullScreenMessage("PC Disconnected");
       delay(2000);
       pcConnected = false;
+      exit;
     }
   }
-
-  // Handle button press with high priority
-  if (digitalRead(ROTARY_ENCODER_BUTTON_PIN) == LOW) {
-    handleButtonPress();
-  }
-
-  handleRotaryEncoder();
-
-  delay(10);
 }
 
-void handleRotaryEncoder() {
-  if (millis() - lastEncoderReadTime > 50) { // 50ms debounce
-    lastEncoderReadTime = millis();
-    if (rotaryEncoder.encoderChanged()) {
-      long newPosition = rotaryEncoder.readEncoder();
-      Serial.print("Rotary Encoder position: ");
-      Serial.println(newPosition);
+void handleForwardButton() {
+  currentDoctorIndex = (currentDoctorIndex + 1) % numDoctors;
+  Serial.print("Incremented Doctor Index: ");
+  Serial.println(currentDoctorIndex);
+  showFullScreenMessage(doctorNames[currentDoctorIndex].c_str());
+  setColor(doctorColors[currentDoctorIndex].c_str());
+  delay(200); // Debounce delay
+}
 
-      if (newPosition > currentDoctorIndex) {
-        currentDoctorIndex = (currentDoctorIndex + 1) % numDoctors;
-        Serial.print("Incremented Doctor Index: ");
-        Serial.println(currentDoctorIndex);
-        showFullScreenMessage(doctorNames[currentDoctorIndex].c_str());
-        setColor(doctorColors[currentDoctorIndex].c_str());
-      } else if (newPosition < currentDoctorIndex) {
-        currentDoctorIndex = (currentDoctorIndex - 1 + numDoctors) % numDoctors;
-        Serial.print("Decremented Doctor Index: ");
-        Serial.println(currentDoctorIndex);
-        showFullScreenMessage(doctorNames[currentDoctorIndex].c_str());
-        setColor(doctorColors[currentDoctorIndex].c_str());
-      }
-      rotaryEncoder.reset();
-    }
-  }
+void handleBackwardButton() {
+  currentDoctorIndex = (currentDoctorIndex - 1 + numDoctors) % numDoctors;
+  Serial.print("Decremented Doctor Index: ");
+  Serial.println(currentDoctorIndex);
+  showFullScreenMessage(doctorNames[currentDoctorIndex].c_str());
+  setColor(doctorColors[currentDoctorIndex].c_str());
+  delay(200); // Debounce delay
 }
 
 void handleButtonPress() {
-  static unsigned long lastButtonPressTime = 0;
-  static bool singlePressDetected = false;
+    static unsigned long lastButtonPressTime = 0;
+    static bool waitingForSecondPress = false;
+    unsigned long currentTime = millis();
 
-  unsigned long currentTime = millis();
-
-  // Debounce the button
-  if (currentTime - lastButtonPressTime < 300) {
-    return; // Ignore button press if within debounce period
-  }
-  lastButtonPressTime = currentTime;
-
-  unsigned long pressDuration = currentTime - lastPressTime;
-
-  if (singlePressDetected) {
-    // Double press detected
-    Serial.println("Double press detected");
-    blinkLED(2, 300);
-    webSocket.broadcastTXT("{\"action\": \"next\", \"press\": \"double\", \"doctorRoomNumber\": " + String(currentDoctorIndex + 1) + "}");
-    singlePressDetected = false; // Reset single press detection
-  } else {
-    singlePressDetected = true; // Register single press
-    delay(doublePressThreshold); // Wait to detect possible double press
-
-    if (singlePressDetected) {
-      // Single press confirmed (after threshold time)
-      Serial.println("Single press detected");
-      blinkLED(1, 500);
-      webSocket.broadcastTXT("{\"action\": \"notify\", \"press\": \"single\", \"doctorRoomNumber\": " + String(currentDoctorIndex + 1) + "}");
-      singlePressDetected = false;
+    // Debounce the button
+    if (currentTime - lastButtonPressTime < 200) {
+        return; // Ignore button press if within debounce period
     }
-  }
 
-  lastPressTime = currentTime;
+    if (digitalRead(BUTTON_PRESS_PIN) == LOW) { 
+        lastButtonPressTime = currentTime;
+
+        if (waitingForSecondPress) {
+            // Double press detected
+            Serial.println("Double press detected");
+            blinkLED(2, 300);
+            webSocket.broadcastTXT("{\"action\": \"next\", \"press\": \"double\", \"doctorRoomNumber\": " + String(currentDoctorIndex + 1) + "}");
+            waitingForSecondPress = false; // Reset waiting state
+        } else {
+            // Register the first press and start waiting for a second press
+            waitingForSecondPress = true;
+        }
+    } else if (waitingForSecondPress && (currentTime - lastButtonPressTime > doublePressThreshold)) {
+        // Single press confirmed (after threshold time has passed without a second press)
+        Serial.println("Single press detected");
+        blinkLED(1, 500);
+        webSocket.broadcastTXT("{\"action\": \"notify\", \"press\": \"single\", \"doctorRoomNumber\": " + String(currentDoctorIndex + 1) + "}");
+        waitingForSecondPress = false; // Reset waiting state
+    }
 }
 
 void blinkLED(int times, int delayTime) {
@@ -196,10 +179,6 @@ void blinkLED(int times, int delayTime) {
     digitalWrite(LED_PIN_BLUE, LOW);
     delay(delayTime);
   }
-}
-
-void IRAM_ATTR readEncoderISR() {
-  rotaryEncoder.readEncoder_ISR();
 }
 
 void showFullScreenMessage(const char *message) {
@@ -314,44 +293,54 @@ void fetchDoctorData() {
 void setColor(const char *color) {
   int red = 255, green = 255, blue = 255;  // Default to white
 
-  struct Color {
-    const char *name;
-    int red;
-    int green;
-    int blue;
-  };
-
-  const Color colorTable[] = {
-    { "red", 255, 0, 0 },
-    { "green", 0, 255, 0 },
-    { "blue", 0, 0, 255 },
-    { "yellow", 255, 255, 0 },
-    { "pink", 255, 192, 203 },
-    { "orange", 255, 165, 0 },
-    { "purple", 128, 0, 128 },
-    { "cyan", 0, 255, 255 },
-    { "teal", 0, 128, 128 },
-    { "magenta", 255, 0, 255 },
-    { "darkred", 139, 0, 0 },
-    { "darkgreen", 0, 100, 0 },
-    { "darkblue", 0, 0, 139 },
-    { "darkorange", 255, 140, 0 },
-    { "indigo", 75, 0, 130 },
-    { "darkcyan", 0, 139, 139 },
-    { "darkslategray", 47, 79, 79 },
-    { "darkmagenta", 139, 0, 139 },
-  };
-
-  for (int i = 0; i < sizeof(colorTable) / sizeof(colorTable[0]); i++) {
-    if (strcmp(color, colorTable[i].name) == 0) {
-      red = colorTable[i].red;
-      green = colorTable[i].green;
-      blue = colorTable[i].blue;
-      break;
-    }
+  if (color[0] == '#' && strlen(color) == 7) {
+    // Parse the hex color code
+    unsigned long colorValue = strtoul(color + 1, NULL, 16);
+    red = (colorValue >> 16) & 0xFF;
+    green = (colorValue >> 8) & 0xFF;
+    blue = colorValue & 0xFF;
+  } else {
+    Serial.println("Invalid color format");
+    return; // Exit if the format is invalid
   }
 
-  analogWrite(LED_PIN_RED, red);
-  analogWrite(LED_PIN_GREEN, green);
-  analogWrite(LED_PIN_BLUE, blue);
+  // Normalize and scale factors to enhance the color intensity
+  float scale = 1.85; // Increase this value to make colors more vivid
+  
+  // Calculate scaled values
+  int scaledRed = constrain((int)(red * scale), 255, 0);
+  int scaledGreen = constrain((int)(green * scale), 255, 0);
+  int scaledBlue = constrain((int)(blue * scale), 255, 0);
+  
+  // Invert the scaled values for common anode RGB LED
+  int newRed = 255 - scaledRed;
+  int newGreen = 255 - scaledGreen;
+  int newBlue = 255 - scaledBlue;
+
+  // // Output the processed values for debugging
+  // Serial.print("Requested Color: ");
+  // Serial.println(color);
+  // Serial.print("Original RGB Values: R=");
+  // Serial.print(red);
+  // Serial.print(" G=");
+  // Serial.print(green);
+  // Serial.print(" B=");
+  // Serial.println(blue);
+  // Serial.print("Scaled RGB Values: R=");
+  // Serial.print(scaledRed);
+  // Serial.print(" G=");
+  // Serial.print(scaledGreen);
+  // Serial.print(" B=");
+  // Serial.println(scaledBlue);
+  // Serial.print("Inverted RGB Values: R=");
+  // Serial.print(newRed);
+  // Serial.print(" G=");
+  // Serial.print(newGreen);
+  // Serial.print(" B=");
+  // Serial.println(newBlue);
+
+  // Apply the color to the LED
+  analogWrite(LED_PIN_RED, newRed);
+  analogWrite(LED_PIN_GREEN, newGreen);
+  analogWrite(LED_PIN_BLUE, newBlue);
 }
