@@ -17,7 +17,8 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 const char *debugSsid = "EDIC 2";       // Debug WiFi SSID
 const char *debugPassword = "00000000"; // Debug WiFi Password
-String serverIPAddress = "172.16.21.27";
+String serverIPAddress = "192.168.137.224";
+// String serverIPAddress = "172.16.21.27";
 
 WebSocketsServer webSocket = WebSocketsServer(81);
 
