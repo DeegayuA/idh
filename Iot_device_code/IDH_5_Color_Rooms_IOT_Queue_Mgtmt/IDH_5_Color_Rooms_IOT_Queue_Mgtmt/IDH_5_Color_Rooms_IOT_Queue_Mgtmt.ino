@@ -7,6 +7,8 @@
 #include <WebSocketsServer.h>
 #include <ArduinoJson.h>
 #include <Fonts/FreeSans12pt7b.h>
+#include <ESPmDNS.h>
+#include <OneButton.h> // Include the OneButton library
 
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
@@ -31,20 +33,17 @@ const int LED_PIN_BLUE = 26;
 
 bool pcConnected = false;
 
-const unsigned long doublePressThreshold = 300; // Threshold for double press detection
-unsigned long lastPressTime = 0;
-
-// Simulated database data
 String doctorNames[10];
 String doctorColors[10];
 int numDoctors = 0;
 int currentDoctorIndex = 0;
 
-void setup() {
-  pinMode(BUTTON_FORWARD_PIN, INPUT_PULLUP);
-  pinMode(BUTTON_BACKWARD_PIN, INPUT_PULLUP);
-  pinMode(BUTTON_PRESS_PIN, INPUT_PULLUP);
+// Initialize OneButton instances for each button
+OneButton forwardButton(BUTTON_FORWARD_PIN, true);
+OneButton backwardButton(BUTTON_BACKWARD_PIN, true);
+OneButton pressButton(BUTTON_PRESS_PIN, true);
 
+void setup() {
   pinMode(LED_PIN_RED, OUTPUT);
   pinMode(LED_PIN_GREEN, OUTPUT);
   pinMode(LED_PIN_BLUE, OUTPUT);
@@ -73,49 +72,36 @@ void setup() {
   Serial.println();
   Serial.print("Connected to WiFi. IP address: ");
   Serial.println(WiFi.localIP());
+
+  // Start mDNS service
+  if (!MDNS.begin("IDHQ_by_EDIC")) {
+    Serial.println("Error setting up MDNS responder!");
+    while (1) {
+      delay(1000);
+    }
+  }
+  Serial.println("mDNS responder started");
+
   fetchDoctorData();
 
   webSocket.begin();
   webSocket.onEvent(webSocketEvent);
+
+  // Attach the callback functions for single and double presses
+  forwardButton.attachClick(handleForwardButton);
+  backwardButton.attachClick(handleBackwardButton);
+  pressButton.attachClick(handleSinglePress);
+  pressButton.attachDoubleClick(handleDoublePress);
 }
 
 void loop() {
   webSocket.loop();
-  display.clearDisplay();
 
-  // Handle button press with high priority
-  if (digitalRead(BUTTON_PRESS_PIN) == LOW) {
-    handleButtonPress();
-  }
-
-  // Handle forward and backward button presses
-  if (digitalRead(BUTTON_FORWARD_PIN) == LOW) {
-    handleForwardButton();
-  }
-
-  if (digitalRead(BUTTON_BACKWARD_PIN) == LOW) {
-    handleBackwardButton();
-  }
+  forwardButton.tick(); // Handle the forward button events
+  backwardButton.tick(); // Handle the backward button events
+  pressButton.tick(); // Handle the press button events
 
   delay(10);
-}
-
-void checkPCConnection() {
-    if (webSocket.connectedClients() > 0) {
-    if (!pcConnected) {
-      showFullScreenMessage("PC Connected");
-      delay(2000);
-      pcConnected = true;
-      displayDoctorNames();
-    }
-  } else {
-    if (pcConnected) {
-      showFullScreenMessage("PC Disconnected");
-      delay(2000);
-      pcConnected = false;
-      exit;
-    }
-  }
 }
 
 void handleForwardButton() {
@@ -124,7 +110,6 @@ void handleForwardButton() {
   Serial.println(currentDoctorIndex);
   showFullScreenMessage(doctorNames[currentDoctorIndex].c_str());
   setColor(doctorColors[currentDoctorIndex].c_str());
-  delay(200); // Debounce delay
 }
 
 void handleBackwardButton() {
@@ -133,39 +118,18 @@ void handleBackwardButton() {
   Serial.println(currentDoctorIndex);
   showFullScreenMessage(doctorNames[currentDoctorIndex].c_str());
   setColor(doctorColors[currentDoctorIndex].c_str());
-  delay(200); // Debounce delay
 }
 
-void handleButtonPress() {
-    static unsigned long lastButtonPressTime = 0;
-    static bool waitingForSecondPress = false;
-    unsigned long currentTime = millis();
+void handleSinglePress() {
+  Serial.println("Single press detected");
+  blinkLED(1, 500);
+  webSocket.broadcastTXT("{\"action\": \"notify\", \"press\": \"single\", \"doctorRoomNumber\": " + String(currentDoctorIndex + 1) + "}");
+}
 
-    // Debounce the button
-    if (currentTime - lastButtonPressTime < 200) {
-        return; // Ignore button press if within debounce period
-    }
-
-    if (digitalRead(BUTTON_PRESS_PIN) == LOW) { 
-        lastButtonPressTime = currentTime;
-
-        if (waitingForSecondPress) {
-            // Double press detected
-            Serial.println("Double press detected");
-            blinkLED(2, 300);
-            webSocket.broadcastTXT("{\"action\": \"next\", \"press\": \"double\", \"doctorRoomNumber\": " + String(currentDoctorIndex + 1) + "}");
-            waitingForSecondPress = false; // Reset waiting state
-        } else {
-            // Register the first press and start waiting for a second press
-            waitingForSecondPress = true;
-        }
-    } else if (waitingForSecondPress && (currentTime - lastButtonPressTime > doublePressThreshold)) {
-        // Single press confirmed (after threshold time has passed without a second press)
-        Serial.println("Single press detected");
-        blinkLED(1, 500);
-        webSocket.broadcastTXT("{\"action\": \"notify\", \"press\": \"single\", \"doctorRoomNumber\": " + String(currentDoctorIndex + 1) + "}");
-        waitingForSecondPress = false; // Reset waiting state
-    }
+void handleDoublePress() {
+  Serial.println("Double press detected");
+  blinkLED(2, 300);
+  webSocket.broadcastTXT("{\"action\": \"next\", \"press\": \"double\", \"doctorRoomNumber\": " + String(currentDoctorIndex + 1) + "}");
 }
 
 void blinkLED(int times, int delayTime) {
@@ -188,59 +152,6 @@ void showFullScreenMessage(const char *message) {
   display.setCursor(0, 20);
   display.println(message);
   display.display();
-}
-
-void displayDoctorNames() {
-  display.clearDisplay();
-  display.setTextSize(1);
-  for (int i = 0; i < numDoctors; i++) {
-    if (i == currentDoctorIndex) {
-      display.setTextColor(SSD1306_WHITE, SSD1306_BLACK);
-    } else {
-      display.setTextColor(SSD1306_WHITE);
-    }
-    display.setCursor(0, i * 10);
-    display.println(doctorNames[i]);
-  }
-  display.display();
-}
-
-void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length) {
-  switch (type) {
-    case WStype_DISCONNECTED:
-      Serial.println("WebSocket Disconnected");
-      break;
-    case WStype_CONNECTED:
-      Serial.println("WebSocket Connected");
-      break;
-    case WStype_TEXT:
-      Serial.printf("WebSocket Text: %s\n", payload);
-      handleWebSocketMessage(payload);
-      break;
-    case WStype_BIN:
-      Serial.println("WebSocket Binary");
-      break;
-  }
-}
-
-void handleWebSocketMessage(uint8_t *payload) {
-  String message = String((char *)payload);
-  DynamicJsonDocument doc(1024);
-  DeserializationError error = deserializeJson(doc, message);
-
-  if (error) {
-    Serial.print(F("deserializeJson() failed: "));
-    Serial.println(error.f_str());
-    return;
-  }
-
-  const char *action = doc["action"];
-  if (strcmp(action, "show_color") == 0) {
-    const char *color = doc["color"];
-    Serial.print("Received color change command: ");
-    Serial.println(color);
-    setColor(color);
-  }
 }
 
 void fetchDoctorData() {
@@ -317,30 +228,22 @@ void setColor(const char *color) {
   int newGreen = 255 - scaledGreen;
   int newBlue = 255 - scaledBlue;
 
-  // // Output the processed values for debugging
-  // Serial.print("Requested Color: ");
-  // Serial.println(color);
-  // Serial.print("Original RGB Values: R=");
-  // Serial.print(red);
-  // Serial.print(" G=");
-  // Serial.print(green);
-  // Serial.print(" B=");
-  // Serial.println(blue);
-  // Serial.print("Scaled RGB Values: R=");
-  // Serial.print(scaledRed);
-  // Serial.print(" G=");
-  // Serial.print(scaledGreen);
-  // Serial.print(" B=");
-  // Serial.println(scaledBlue);
-  // Serial.print("Inverted RGB Values: R=");
-  // Serial.print(newRed);
-  // Serial.print(" G=");
-  // Serial.print(newGreen);
-  // Serial.print(" B=");
-  // Serial.println(newBlue);
-
   // Apply the color to the LED
   analogWrite(LED_PIN_RED, newRed);
   analogWrite(LED_PIN_GREEN, newGreen);
   analogWrite(LED_PIN_BLUE, newBlue);
+}
+
+void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length) {
+  switch (type) {
+    case WStype_DISCONNECTED:
+      Serial.println("WebSocket Disconnected");
+      break;
+    case WStype_CONNECTED:
+      Serial.println("WebSocket Connected");
+      break;
+    case WStype_TEXT:
+      Serial.printf("WebSocket received text: %s\n", payload);
+      break;
+  }
 }
