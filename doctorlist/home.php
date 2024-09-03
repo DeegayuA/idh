@@ -80,42 +80,64 @@ function adjustBrightness($hex, $steps)
 
 <style>
     :root {
-        --doctor-1-color: #E57373; /* Light Red */
-        --doctor-2-color: #81C784; /* Light Green */
-        --doctor-3-color: #64B5F6; /* Light Blue */
-        --doctor-4-color: #FFF176; /* Light Yellow */
-        --doctor-5-color: #F06292; /* Light Pink */
-        --doctor-6-color: #FFB74D; /* Light Orange */
-        --doctor-7-color: #9575CD; /* Light Purple */
-        --doctor-8-color: #4DD0E1; /* Light Cyan */
-        --doctor-9-color: #4DB6AC; /* Light Teal */
-        --doctor-10-color: #BA68C8; /* Light Magenta */
+        --doctor-1-color: #E57373;
+        /* Light Red */
+        --doctor-2-color: #81C784;
+        /* Light Green */
+        --doctor-3-color: #64B5F6;
+        /* Light Blue */
+        --doctor-4-color: #FFF176;
+        /* Light Yellow */
+        --doctor-5-color: #F06292;
+        /* Light Pink */
+        --doctor-6-color: #FFB74D;
+        /* Light Orange */
+        --doctor-7-color: #9575CD;
+        /* Light Purple */
+        --doctor-8-color: #4DD0E1;
+        /* Light Cyan */
+        --doctor-9-color: #4DB6AC;
+        /* Light Teal */
+        --doctor-10-color: #BA68C8;
+        /* Light Magenta */
     }
 
     @media (prefers-color-scheme: dark) {
         :root {
-            --doctor-1-color: #D32F2F; /* Dark Red */
-            --doctor-2-color: #388E3C; /* Dark Green */
-            --doctor-3-color: #1976D2; /* Dark Blue */
-            --doctor-4-color: #FBC02D; /* Dark Yellow */
-            --doctor-5-color: #E91E63; /* Dark Pink */
-            --doctor-6-color: #F57C00; /* Dark Orange */
-            --doctor-7-color: #512DA8; /* Dark Purple */
-            --doctor-8-color: #0097A7; /* Dark Cyan */
-            --doctor-9-color: #00796B; /* Dark Teal */
-            --doctor-10-color: #8E24AA; /* Dark Magenta */
+            --doctor-1-color: #D32F2F;
+            /* Dark Red */
+            --doctor-2-color: #388E3C;
+            /* Dark Green */
+            --doctor-3-color: #1976D2;
+            /* Dark Blue */
+            --doctor-4-color: #FBC02D;
+            /* Dark Yellow */
+            --doctor-5-color: #E91E63;
+            /* Dark Pink */
+            --doctor-6-color: #F57C00;
+            /* Dark Orange */
+            --doctor-7-color: #512DA8;
+            /* Dark Purple */
+            --doctor-8-color: #0097A7;
+            /* Dark Cyan */
+            --doctor-9-color: #00796B;
+            /* Dark Teal */
+            --doctor-10-color: #8E24AA;
+            /* Dark Magenta */
         }
     }
 
     .total-queue-banner {
         width: 100%;
-        background-color: var(--card-background); /* Adjust as needed */
+        background-color: var(--card-background);
+        /* Adjust as needed */
         padding: 10px;
     }
 
     .total-queue-banner h2 {
         margin: 0;
-        color: var(--text-color); /* Adjust as needed */
+        color: var(--text-color);
+        /* Adjust as needed */
     }
 
     .full-height {
@@ -140,7 +162,8 @@ function adjustBrightness($hex, $steps)
         border-radius: 15px;
         font-size: 1rem;
         padding: 10px;
-        transition: all 0.3s ease-in-out; /* Added transition for smooth hover effect */
+        transition: all 0.3s ease-in-out;
+        /* Added transition for smooth hover effect */
     }
 
     .gap {
@@ -156,64 +179,62 @@ function adjustBrightness($hex, $steps)
     .button-section {
         margin: 10px;
     }
+
     @media screen and (prefers-color-scheme: light) {
+        <?php for ($i = 1; $i <= $doctor_room_count; $i++) { ?>.btn-primary-<?php echo $i; ?> {
+            background-color: var(--doctor-<?php echo $i; ?>-btn-color);
+            filter: contrast(1.6) brightness(0.9);
+        }
 
-<?php for ($i = 1; $i <= $doctor_room_count; $i++) { ?>.btn-primary-<?php echo $i; ?> {
-    background-color: var(--doctor-<?php echo $i; ?>-btn-color);
-    filter: contrast(1.6) brightness(0.9);
-}
+        .btn-primary-<?php echo $i; ?>:hover {
+            background-color: var(--doctor-<?php echo $i; ?>-btn-hover);
+            filter: contrast(1.3) brightness(1.2);
+        }
 
-.btn-primary-<?php echo $i; ?>:hover {
-    background-color: var(--doctor-<?php echo $i; ?>-btn-hover);
-    filter: contrast(1.3) brightness(1.2);
-}
+        .btn-secondary-<?php echo $i; ?> {
+            border: 2px solid var(--doctor-<?php echo $i; ?>-btn-color);
+            color: var(--doctor-<?php echo $i; ?>-btn-color);
+            /* Added text color for secondary button */
+            filter: contrast(1.6) brightness(0.9);
+        }
 
-.btn-secondary-<?php echo $i; ?> {
-    border: 2px solid var(--doctor-<?php echo $i; ?>-btn-color);
-    color: var(--doctor-<?php echo $i; ?>-btn-color);
-    /* Added text color for secondary button */
-    filter: contrast(1.6) brightness(0.9);
-}
+        .btn-secondary-<?php echo $i; ?>:hover {
+            border: 2px solid var(--doctor-<?php echo $i; ?>-btn-hover);
+            color: var(--doctor-<?php echo $i; ?>-btn-hover);
+            /* Updated text color on hover */
+            filter: contrast(1.3) brightness(1.2);
+        }
 
-.btn-secondary-<?php echo $i; ?>:hover {
-    border: 2px solid var(--doctor-<?php echo $i; ?>-btn-hover);
-    color: var(--doctor-<?php echo $i; ?>-btn-hover);
-    /* Updated text color on hover */
-    filter: contrast(1.3) brightness(1.2);
-}
+        <?php } ?>
+    }
 
-<?php } ?>
-}
+    @media screen and (prefers-color-scheme: dark) {
+        <?php for ($i = 1; $i <= $doctor_room_count; $i++) { ?>.btn-primary-<?php echo $i; ?> {
+            background-color: var(--doctor-<?php echo $i; ?>-btn-color);
+            filter: contrast(1.5) brightness(1.5);
+        }
 
-@media screen and (prefers-color-scheme: dark) {
+        .btn-primary-<?php echo $i; ?>:hover {
+            background-color: var(--doctor-<?php echo $i; ?>-btn-hover);
+            filter: contrast(1.6) brightness(1.4);
+        }
 
-<?php for ($i = 1; $i <= $doctor_room_count; $i++) { ?>.btn-primary-<?php echo $i; ?> {
-    background-color: var(--doctor-<?php echo $i; ?>-btn-color);
-    filter: contrast(1.5) brightness(1.5);
-}
+        .btn-secondary-<?php echo $i; ?> {
+            border: 2px solid var(--doctor-<?php echo $i; ?>-btn-color);
+            color: var(--doctor-<?php echo $i; ?>-btn-color);
+            /* Added text color for secondary button */
+            filter: contrast(1.5) brightness(1.5);
+        }
 
-.btn-primary-<?php echo $i; ?>:hover {
-    background-color: var(--doctor-<?php echo $i; ?>-btn-hover);
-    filter: contrast(1.6) brightness(1.4);
-}
+        .btn-secondary-<?php echo $i; ?>:hover {
+            border: 2px solid var(--doctor-<?php echo $i; ?>-btn-hover);
+            color: var(--doctor-<?php echo $i; ?>-btn-hover);
+            /* Updated text color on hover */
+            filter: contrast(1.6) brightness(1.4);
+        }
 
-.btn-secondary-<?php echo $i; ?> {
-    border: 2px solid var(--doctor-<?php echo $i; ?>-btn-color);
-    color: var(--doctor-<?php echo $i; ?>-btn-color);
-    /* Added text color for secondary button */
-    filter: contrast(1.5) brightness(1.5);
-}
-
-.btn-secondary-<?php echo $i; ?>:hover {
-    border: 2px solid var(--doctor-<?php echo $i; ?>-btn-hover);
-    color: var(--doctor-<?php echo $i; ?>-btn-hover);
-    /* Updated text color on hover */
-    filter: contrast(1.6) brightness(1.4);
-}
-
-<?php } ?>
-}
-    
+        <?php } ?>
+    }
 </style>
 
 
@@ -283,142 +304,138 @@ function adjustBrightness($hex, $steps)
     };
 
     $(document).ready(function() {
-        // Initialize an object to store queue information for each doctor
-        var in_queue = {};
+    var in_queue = {};
+    var alertOpen = false;  // Track if an alert is currently open
 
-        updateQueueCounts(); // Initial update
+    updateQueueCounts(); // Initial update
 
-        // Event handlers for next buttons
-        $('[id^=next_queue_]').click(function() {
-            var doctorRoomNumber = $(this).attr('id').split('_')[2];
-            console.log('Next Queue Button Clicked for Doctor Room:', doctorRoomNumber);
-            get_queue(doctorRoomNumber);
+    $('[id^=next_queue_]').click(function() {
+        var doctorRoomNumber = $(this).attr('id').split('_')[2];
+        get_queue(doctorRoomNumber);
+        updateQueueCounts();
+    });
+
+    $('[id^=notify_]').click(function() {
+        var doctorRoomNumber = $(this).attr('id').split('_')[1];
+
+        if (in_queue[doctorRoomNumber] && in_queue[doctorRoomNumber].queue) {
+            update_queue_info(in_queue[doctorRoomNumber], doctorRoomNumber);
             updateQueueCounts();
-        });
-
-        // Event handlers for notify buttons
-        $('[id^=notify_]').click(function() {
-            var doctorRoomNumber = $(this).attr('id').split('_')[1];
-            console.log('Notify Button Clicked for Doctor Room:', doctorRoomNumber);
-
-            // Check if there is a current queue for this doctor
-            if (in_queue[doctorRoomNumber] && in_queue[doctorRoomNumber].queue) {
-                update_queue_info(in_queue[doctorRoomNumber], doctorRoomNumber);
-                updateQueueCounts();
-            } else {
-                alert("No Queue Available for Doctor Room " + doctorRoomNumber);
-            }
-        });
-
-        function updateQueueCounts() {
-            $.ajax({
-                url: './../Actions.php?a=getQueueCounts',
-                method: 'POST',
-                dataType: 'json',
-                success: function(resp) {
-                    if (resp.total !== undefined) {
-                        $('#total_patients_count').text(resp.total);
-                    }
-                    // Update patient counts for each doctor room
-                    for (var i = 1; i <= Object.keys(resp.doctors).length; i++) {
-                        var roomName = 'Room' + i;
-                        var patientCount = resp.doctors[roomName];
-                        $('#total_patients_' + i).text(patientCount);
-                    }
-                },
-                error: function(err) {
-                    console.error('Error fetching queue counts:', err);
-                }
-            });
-        }
-
-        function get_queue(doctorId) {
-            $.ajax({
-                url: './../Actions.php?a=next_queue',
-                method: 'POST',
-                data: {
-                    doctor_id: doctorId
-                },
-                dataType: 'json',
-                error: function(err) {
-                    console.log(err);
-                },
-                success: function(resp) {
-                    if (resp.status === 'success' && resp.data !== null) {
-                        in_queue[doctorId] = resp.data; // Store queue info for this doctor
-                        update_queue_info(resp.data, doctorId);
-                    } else {
-                        // Reset values to default when no queue is available
-                        in_queue[doctorId] = null;
-                        resetQueueInfo(doctorId);
-                        alert("No Queue Available for Doctor Room " + doctorId);
-                    }
-                }
-            });
-        }
-
-        function resetQueueInfo(doctorId) {
-            var queueElementId = '#queue_' + doctorId;
-            var customerNameElementId = '#customer_name_' + doctorId;
-            var customerAgeElementId = '#customer_age_' + doctorId;
-            var customerSexElementId = '#customer_sex_' + doctorId;
-
-            $(queueElementId).text("----");
-            $(customerNameElementId).text("Unknown");
-            $(customerAgeElementId).text("N/A");
-            $(customerSexElementId).text("N/A");
-        }
-
-        function update_queue_info(queue_data, doctorId) {
-            var queueElementId = '#queue_' + doctorId;
-            var customerNameElementId = '#customer_name_' + doctorId;
-            var customerAgeElementId = '#customer_age_' + doctorId;
-            var customerSexElementId = '#customer_sex_' + doctorId;
-
-            $(queueElementId).text(queue_data.queue || "----");
-            $(customerNameElementId).text(queue_data.customer_name || "Unknown");
-            $(customerAgeElementId).text(queue_data.age || "N/A");
-            $(customerSexElementId).text(queue_data.sex || "N/A");
-
-            const message = JSON.stringify({
-                type: 'queue',
-                cashier_id: doctorId,
-                qid: queue_data.queue_id
-            });
-
-            console.log('Sending WebSocket Message:', message);
-            websocket.send(message);
-        }
-
-        // ESP32 WebSocket Integration
-        try {
-            var esp32_websocket = new WebSocket("ws://192.168.4.1:81/");
-
-            esp32_websocket.onopen = function(event) {
-                console.log('ESP Socket is open!');
-            };
-
-            esp32_websocket.onclose = function(event) {
-                console.log('ESP Socket has been closed!');
-            };
-
-            esp32_websocket.onmessage = function(event) {
-                var message = JSON.parse(event.data);
-                var doctorRoomNumber = message.doctorRoomNumber;
-                if (message.press === "single") {
-                    console.log('Notify Button Triggered for Doctor Room:', doctorRoomNumber);
-                    if (in_queue[doctorRoomNumber] && in_queue[doctorRoomNumber].queue) {
-                        update_queue_info(in_queue[doctorRoomNumber], doctorRoomNumber);
-                    } else {
-                        alert("No Queue Available");
-                    }
-                } else if (message.press === "double") {
-                    console.log('Next Queue Button Triggered for Doctor Room:', doctorRoomNumber);
-                    get_queue(doctorRoomNumber);
-                }
-            };
-        } catch (err) {
-            console.warn("ESP32 device not connected:", err);
+        } else {
+            alertOpen = true;  // Alert is open now
+            alert("No Queue Available for Doctor Room " + doctorRoomNumber);
         }
     });
+
+    function updateQueueCounts() {
+        $.ajax({
+            url: './../Actions.php?a=getQueueCounts',
+            method: 'POST',
+            dataType: 'json',
+            success: function(resp) {
+                if (resp.total !== undefined) {
+                    $('#total_patients_count').text(resp.total);
+                }
+                for (var i = 1; i <= Object.keys(resp.doctors).length; i++) {
+                    var roomName = 'Room' + i;
+                    var patientCount = resp.doctors[roomName];
+                    $('#total_patients_' + i).text(patientCount);
+                }
+            },
+            error: function(err) {
+                console.error('Error fetching queue counts:', err);
+            }
+        });
+    }
+
+    function get_queue(doctorId) {
+        $.ajax({
+            url: './../Actions.php?a=next_queue',
+            method: 'POST',
+            data: {
+                doctor_id: doctorId
+            },
+            dataType: 'json',
+            error: function(err) {
+                console.log(err);
+            },
+            success: function(resp) {
+                if (resp.status === 'success' && resp.data !== null) {
+                    in_queue[doctorId] = resp.data;
+                    update_queue_info(resp.data, doctorId);
+                } else {
+                    in_queue[doctorId] = null;
+                    resetQueueInfo(doctorId);
+                    alertOpen = true;  // Alert is open now
+                    alert("No Queue Available for Doctor Room " + doctorId);
+                }
+            }
+        });
+    }
+
+    function resetQueueInfo(doctorId) {
+        var queueElementId = '#queue_' + doctorId;
+        var customerNameElementId = '#customer_name_' + doctorId;
+        var customerAgeElementId = '#customer_age_' + doctorId;
+        var customerSexElementId = '#customer_sex_' + doctorId;
+
+        $(queueElementId).text("----");
+        $(customerNameElementId).text("Unknown");
+        $(customerAgeElementId).text("N/A");
+        $(customerSexElementId).text("N/A");
+    }
+
+    function update_queue_info(queue_data, doctorId) {
+        var queueElementId = '#queue_' + doctorId;
+        var customerNameElementId = '#customer_name_' + doctorId;
+        var customerAgeElementId = '#customer_age_' + doctorId;
+        var customerSexElementId = '#customer_sex_' + doctorId;
+
+        $(queueElementId).text(queue_data.queue || "----");
+        $(customerNameElementId).text(queue_data.customer_name || "Unknown");
+        $(customerAgeElementId).text(queue_data.age || "N/A");
+        $(customerSexElementId).text(queue_data.sex || "N/A");
+
+        const message = JSON.stringify({
+            type: 'queue',
+            cashier_id: doctorId,
+            qid: queue_data.queue_id
+        });
+
+        websocket.send(message);
+    }
+
+    // ESP32 WebSocket Integration
+    try {
+        var esp32_websocket = new WebSocket("ws://IDHQ_by_EDIC.local:81/");
+
+        esp32_websocket.onopen = function(event) {
+            console.log('ESP Socket is open!');
+        };
+
+        esp32_websocket.onclose = function(event) {
+            console.log('ESP Socket has been closed!');
+        };
+
+        esp32_websocket.onmessage = function(event) {
+            var message = JSON.parse(event.data);
+            var doctorRoomNumber = message.doctorRoomNumber;
+            if (message.press === "single") {
+                if (alertOpen) {
+                    alertOpen = false;  // Close the alert
+                    alert("Alert dismissed");  // Optionally show a dismissal message
+                } else if (in_queue[doctorRoomNumber] && in_queue[doctorRoomNumber].queue) {
+                    update_queue_info(in_queue[doctorRoomNumber], doctorRoomNumber);
+                } else {
+                    alertOpen = true;
+                    alert("No Queue Available");
+                }
+            } else if (message.press === "double") {
+                get_queue(doctorRoomNumber);
+            }
+        };
+    } catch (err) {
+        console.warn("ESP32 device not connected:", err);
+    }
+});
 </script>
