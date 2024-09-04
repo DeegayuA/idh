@@ -129,8 +129,8 @@ function adjustBrightness($hex, $steps)
 
     .total-queue-banner {
         width: 100%;
-        background-color: var(--card-background);
-        padding: 10px;
+        /* background-color: var(--card-background); */
+        padding-top: 10px;
         margin: 10px;
         margin-bottom: 0;
         display: flex;
@@ -187,9 +187,9 @@ function adjustBrightness($hex, $steps)
     position: absolute;
     top: 70px; 
     z-index: 1000;
-    width: 95%;
     display: flex;
     justify-content: center;
+    align-items: center;
     background-color: var(--alert-background-color);
     padding: 0.7rem;
     color: #fff;
@@ -279,14 +279,14 @@ function adjustBrightness($hex, $steps)
 <div class="container full-height">
     <div class="row full-height center-content">
         <div class="d-flex flex-wrap">
-        <h2 id="alert-banner" class="alert-banner text-center container"></h2>
+        <h3 id="alert-banner" class="alert-banner text-center container"></h3>
             <div class="banner total-queue-banner text-center">
-                <h2>
+                <h3>
                     
                     Total Patients Waiting: <span id="total_patients_count">0</span>,
                     Monitor Connection: <span id="websocket_status"><span style="color:orange;">?</span></span>,
                     IoT Connection: <span id="esp32_status"><span style="color:orange;">?</span></span>
-                </h2>
+                </h3>
             </div>
 
             <?php for ($i = 1; $i <= $doctor_room_count; $i++) { ?>
