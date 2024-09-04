@@ -265,33 +265,56 @@ class DBConnection extends SQLite3
         $chunkSize = 500;
         $offset = 0;
         $all_rows = [];
+        
+        error_log("Unique Person ID: " . $unique_person_id);
     
-        do {
-            // Step 1: Fetch data in chunks
-            $result = $this->query("SELECT * FROM `queue_list` WHERE `encrypted_unique_person_id` = '{$unique_person_id}' ORDER BY `date_created` DESC LIMIT $chunkSize OFFSET $offset");
+        while (true) {
+            $sql = "SELECT * FROM `queue_list` WHERE `encrypted_unique_person_id` = :unique_person_id ORDER BY `date_created` DESC LIMIT $chunkSize OFFSET $offset";
+            error_log("SQL Query: " . $sql);
     
+            $stmt = $this->prepare($sql);
+            if (!$stmt) {
+                error_log("Failed to prepare SQL statement: " . $this->lastErrorMsg());
+                throw new Exception("Database query preparation failed.");
+            }
+    
+            $stmt->bindValue(':unique_person_id', $unique_person_id, SQLITE3_TEXT);
+            $result = $stmt->execute();
+    
+            if (!$result) {
+                error_log("Failed to execute SQL statement: " . $this->lastErrorMsg());
+                throw new Exception("Database query execution failed.");
+            }
+    
+            $rowsFetched = false;
             while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
-                // Decrypt encrypted fields
                 $row['customer_name'] = $this->decrypt_data($row['customer_name']);
                 $row['phone_number'] = $this->decrypt_data($row['phone_number']);
                 $row['encrypted_id_number'] = $this->decrypt_data($row['encrypted_id_number']);
+    
+                // Check if decryption failed
+                if ($row['customer_name'] === false || $row['phone_number'] === false || $row['encrypted_id_number'] === false) {
+                    error_log("Decryption failed for row with ID: " . $row['queue_id']);
+                    continue; // Skip this row if decryption failed
+                }
+    
                 $all_rows[] = $row;
+                $rowsFetched = true;
             }
     
-            if ($result->numColumns() == 0) {
+            if (!$rowsFetched) {
                 break;
             }
     
             $offset += $chunkSize;
-        } while (true);
+        }
     
-        // Step 2: Sort the collected rows by date_created in descending order
-        usort($all_rows, function ($a, $b) {
-            return strtotime($b['date_created']) - strtotime($a['date_created']);
-        });
+        error_log("Number of rows fetched: " . count($all_rows));
     
         return $all_rows;
     }
+    
+    
     
     public function searchByQRCodeFileName($encrypted_unique_person_id)
     {
@@ -314,7 +337,7 @@ class DBConnection extends SQLite3
         foreach ($decryptedIds as $id) {
             if ($id === $decrypted_param) {
                 $matchingId = $id;
-                echo $matchingId;
+                // echo $matchingId;
                 break;
             }
         }
@@ -335,7 +358,7 @@ class DBConnection extends SQLite3
 
         // Step 5: If no matching row was found, return null
         // Debugging: Output a message indicating no matching row was found
-        echo "No matching row found for encrypted_unique_person_id: " . $encrypted_unique_person_id;
+        // echo "No matching row found for encrypted_unique_person_id: " . $encrypted_unique_person_id;
         return null;
     }
 

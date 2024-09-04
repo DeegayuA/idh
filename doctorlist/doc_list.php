@@ -46,6 +46,6 @@ $server_ip = file_get_contents('https://api.ipify.org');
 echo json_encode($response);
 
 // Output the server IP address
-echo "\n\n\n Server IP Address: " . $server_ip;
-echo "\n add this IP to ESP32";
+echo "\n Server IP Address: " . $server_ip;
+echo " add this IP to ESP32";
 ?>

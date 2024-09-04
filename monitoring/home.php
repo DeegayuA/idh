@@ -86,6 +86,7 @@
       background: var(--background-color);
       color: var(--text-color);
       font-family: var(--font-family);
+      overflow: hidden;
     }
 
     nav {
@@ -93,7 +94,6 @@
     }
 
     #monitor-holder {
-      /* min-height: 100vh; */
       background-color: var(--background-color);
     }
 
@@ -125,17 +125,15 @@
 
     .card-header {
       background: var(--card-background);
+      padding: 1rem 0rem 0rem 0rem !important;
     }
 
     .list-group-item {
-      top: 5px;
       background: var(--card-background);
       color: var(--text-color);
-      border: 2px solid var(--primary-color);
-      border-radius: 1rem;
-      padding: 1rem;
-      margin-bottom: 1rem;
-      margin-top: 1rem;
+      border-radius: 0.5rem !important;
+      padding: 0.5rem;
+      margin-bottom: 0.5rem;
     }
 
     .list-group-item .cashier-name {
@@ -176,13 +174,13 @@
     }
 
     #serving-field {
-      flex: 2;
-      max-width: 25%;
+      flex: 4;
+      max-width: 40%;
     }
 
     #action-field {
-      flex: 3;
-      max-width: 75%;
+      flex: 6;
+      max-width: 60%;
     }
 
     @media (max-width: 992px) {
@@ -245,29 +243,30 @@
       }
     }
 
-    .footer{
+    .footer {
       padding: 0 5rem;
     }
+
     .footer-logos {
-  text-align: center;
-  margin-top: 2rem;
-}
+      text-align: center;
+      margin-top: 2rem;
+    }
 
-.footer-logos img {
-  height: 50px;
-  width: auto;
-  margin: 10px;
-}
+    .footer-logos img {
+      height: 50px;
+      width: auto;
+      margin: 10px;
+    }
 
-.QR-logos img {
-  height: 100px;
-  width: 100px;
-  aspect-ratio: 1;
-}
-.list-group-item{
-  margin: 0;
-}
+    .QR-logos img {
+      height: 100px;
+      aspect-ratio: 1;
+    }
 
+    video {
+      height: 90%;
+      aspect-ratio: 16/9;
+    }
   </style>
 </head>
 
@@ -283,7 +282,7 @@
         <div class="col-md-3 d-flex flex-column align-items-center justify-content-center border-end border-dark" id="serving-field">
           <div class="card col-sm-12 shadow">
             <div class="card-header">
-              <h5 class="card-title text-center">Now Serving</h5>
+              <h5 class="text-center">Now Serving</h5>
             </div>
             <div class="card-body p-0">
               <div id="serving-list" class="list-group">
@@ -295,7 +294,7 @@
                   <div class="list-group-item" data-id="<?php echo $row['cashier_id'] ?>" style="display:none">
                     <div class="fs-5 fw-2 cashier-name border-bottom border-info"><?php echo $row['name'] ?></div>
                     <div class="ps-4"><span class="serve-queue fs-4 fw-bold">1001 - John Smith</span></div>
-                    <div class="doctor-room mb-3 d-flex flex-column align-items-center center-content color-room" data-room="<?php echo $i; ?>">
+                    <div class="doctor-room d-flex flex-column align-items-center center-content color-room" data-room="<?php echo $i; ?>">
                     </div>
                   </div>
 
@@ -313,37 +312,43 @@
             $vid = scandir('./../video');
             $video = isset($vid[2]) ? $vid[2] : "";
             ?>
-            <video id="loop-vid" src="./../video/<?php echo $video ?>" loop muted class="w-100 h-100"></video>
+            <video id="loop-vid" src="./../video/<?php echo $video ?>" loop muted></video>
           </div>
 
         </div>
       </div>
     </div>
     <div class="footer d-flex justify-content-between align-items-center py-4">
-  <div id="datetimefield" class="text-center">
-    <div class="fs-1 fw-bold time"></div>
-    <div class="fs-5 fw-bold date"></div>
-  </div>
-  <div class="footer-logos">
-    <span>Powered by EDIC UOK</span>
-    <div class="d-flex align-items-center justify-content-center">
-      <img src="./../logos/EDICWebLogo.png" alt="EDIC Web Logo">
-      <img src="./../logos/university-of-kelaniya-logo.png" alt="University of Kelaniya Logo">
+      <div id="datetimefield" class="text-center">
+        <div class="fs-1 fw-bold time"></div>
+        <div class="fs-5 fw-bold date"></div>
+      </div>
+      <div class="footer-logos">
+        <span>Powered by EDIC UOK</span>
+        <div class="d-flex align-items-center justify-content-center">
+          <img src="./../logos/EDICWebLogo.png" alt="EDIC Web Logo">
+          <img src="./../logos/university-of-kelaniya-logo.png" alt="University of Kelaniya Logo">
+        </div>
+        Connection: <span id="websocket_status"><span style="color:orange;">?</span></span>
+
+      </div>
+      <div class="QR-logos">
+        <img src="./../logos/QR.png" alt="qr">
+      </div>
     </div>
-  </div>
-  <div class="QR-logos">
-    <img src="./../logos/QR.png" alt="qr" style="height: 100px; width: 100px;">
-  </div>
-</div>
   </div>
 
   <script>
     $(document).ready(() => {
       let websocket = new WebSocket("ws://<?php echo $_SERVER['SERVER_NAME'] ?>:2306/queuing/php-sockets.php");
       websocket.onopen = () => console.log('Socket is open!');
+      $('#websocket_status').html('<span style="color:green;">&#x2713;</span>'); // Green arrow for open
+
+
       websocket.onclose = () => {
         console.log('Socket has been closed!');
         websocket = new WebSocket("ws://<?php echo $_SERVER['SERVER_NAME'] ?>:2306/queuing/php-sockets.php");
+        $('#websocket_status').html('<span style="color:red;">&#10060;</span>'); // Red cross for closed
       };
 
       let in_queue = {};
@@ -401,28 +406,38 @@
       };
 
       const time_loop = () => {
-        const mos = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-        let datetime = new Date();
-        let hour = datetime.getHours();
-        let min = datetime.getMinutes();
-        let s = datetime.getSeconds();
-        let ampm = hour >= 12 ? "PM" : "AM";
-        let mo = mos[datetime.getMonth()];
-        let d = datetime.getDate();
-        let yr = datetime.getFullYear();
-        hour = hour >= 12 ? hour - 12 : hour;
-        hour = String(hour).padStart(2, '0');
-        min = String(min).padStart(2, '0');
-        s = String(s).padStart(2, '0');
-        $('.time').text(`${hour}:${min}:${s} ${ampm}`);
-        $('.date').text(`${mo} ${d}, ${yr}`);
-      };
+  const mos = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  let datetime = new Date();
+  
+  let hour = datetime.getHours();
+  let min = datetime.getMinutes();
+  let s = datetime.getSeconds();
+  let ampm = hour >= 12 ? "PM" : "AM";
+  
+  // Convert hour to 12-hour format
+  hour = hour % 12;
+  hour = hour ? hour : 12; // Hour '0' should be '12'
+  
+  let mo = mos[datetime.getMonth()];
+  let d = datetime.getDate();
+  let yr = datetime.getFullYear();
+  
+  min = String(min).padStart(2, '0');
+  s = String(s).padStart(2, '0');
+  $('.time').text(`${hour}:${min}:${s} ${ampm}`);
+  $('.date').text(`${mo} ${d}, ${yr}`);
+};
+
+
+
 
       const _resize_elements = () => {
         let window_height = $(window).height();
         let nav_height = $('nav').height();
         let container_height = window_height - nav_height;
-        $('#serving-field,#action-field').height(container_height - 50);
+        let vid_width = $('#action-field').width();
+        $('#serving-field,#action-field').height(container_height - 250);
+        $('#loop-vid').width(vid_width - 50);
         $('#serving-list').height($('#serving-list').parent().height() - 30);
       };
 

@@ -264,8 +264,11 @@ $encrypted_unique_person_id = isset($_POST['encrypted_unique_person_id']) ? $_PO
                         <div class="input-group">
                             <input type="text" id="encrypted_id_number" name="encrypted_id_number" autofocus autocomplete="off" class="form-control form-control-md rounded-left border-0 border-bottom" required>
                             <button type="button" class="btn btn-secondary" id="scan-qr-btn">Scan QR</button>
+                         
+
                         </div>
                     </div>
+                    <div id="qr-reader" style="display:none;"></div>
                     <div class="form-group mb-3">
                         <label for="phone_number" class="control-label text-info2">Enter Phone Number</label>
                         <div class="input-group">
@@ -347,228 +350,229 @@ $encrypted_unique_person_id = isset($_POST['encrypted_unique_person_id']) ? $_PO
         </div>
     </div>
 
-    <script>
-        $(function() {
-            $(function() {
-                var previousValues = {
-                    phoneNumber: '',
-                    nicNumber: ''
-                };
+<script>
+    $(function() {
+    var previousValues = {
+        phoneNumber: '',
+        nicNumber: ''
+    };
 
-                $(document).on('click', function(e) {
-                    var isInsideForm = $(e.target).closest('#queue-form').length > 0;
-                    if (!isInsideForm) {
-                        var phoneNumber = $('#phone_number').val();
-                        var nicNumber = $('#encrypted_id_number').val();
+  $(document).on('click', function(e) {
+    var isInsideForm = $(e.target).closest('#queue-form').length > 0;
+    if (!isInsideForm) {
+        var phoneNumber = $('#phone_number').val();
+        var nicNumber = $('#encrypted_id_number').val();
+        var uniquePersonId = ''; // Adjust this based on your form data or logic
 
-                        if (phoneNumber !== previousValues.phoneNumber || nicNumber !== previousValues.nicNumber) {
-                            previousValues.phoneNumber = phoneNumber;
-                            previousValues.nicNumber = nicNumber;
-                            fetchPatientData(phoneNumber, nicNumber);
-                        }
-                    }
-                });
+        if (phoneNumber !== previousValues.phoneNumber || nicNumber !== previousValues.nicNumber) {
+            previousValues.phoneNumber = phoneNumber;
+            previousValues.nicNumber = nicNumber;
+            fetchPatientData(phoneNumber, nicNumber, uniquePersonId); // Ensure uniquePersonId is provided
+        }
+    }
+});
 
-                function fetchPatientData(phoneNumber, nicNumber) {
-                    $.ajax({
-                        url: 'fetch_patient_data.php',
-                        method: 'POST',
-                        data: {
-                            phone_number: phoneNumber,
-                            nic: nicNumber
-                        },
-                        dataType: 'json',
-                        success: function(response) {
-                            if (response.status === 'success') {
-                                var data = response.data;
-                                $('#customer_name').val(data.customer_name);
-                                $('#age').val(data.age);
-                                $('#sex').val(data.sex);
-                                $('#encrypted_id_number').val(data.encrypted_id_number);
-                                $('#phone_number').val(data.phone_number);
-                            }
-                        },
-                        error: function(jqXHR, textStatus, errorThrown) {
-                            console.log('Error fetching patient data:', textStatus, errorThrown);
-                            alert('Error fetching patient data: ' + textStatus + ' - ' + errorThrown);
-                        }
+
+    // Define the fetchPatientData function outside of the $(function() { ... }) block
+    window.fetchPatientData = function(phoneNumber, nicNumber, uniquePersonId) {
+    $.ajax({
+        url: 'fetch_patient_data.php',
+        method: 'POST',
+        data: {
+            phone_number: phoneNumber,
+            nic: nicNumber,
+            unique_person_id: uniquePersonId
+        },
+        dataType: 'json',
+        success: function(response) {
+            if (response.status === 'success') {
+                var data = response.data;
+                $('#customer_name').val(data.customer_name);
+                $('#age').val(data.age);
+                $('#sex').val(data.sex);
+                $('#encrypted_id_number').val(data.encrypted_id_number);
+                $('#phone_number').val(data.phone_number);
+            }
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+            console.log('Error fetching patient data:', textStatus, errorThrown);
+            alert('Error fetching patient data: ' + textStatus + ' - ' + errorThrown);
+        }
+    });
+};
+
+
+    function fetchActiveCashiers() {
+        $.ajax({
+            url: './Actions.php?a=get_active_cashiers',
+            method: 'GET',
+            dataType: 'JSON',
+            success: function(response) {
+                if (response.status === 'success') {
+                    var cashiers = response.data;
+                    var doctorList = $('#doctor-list').empty();
+                    doctorList.append($('<input>').attr({
+                        type: 'radio',
+                        name: 'preferred_doctor',
+                        id: 'none',
+                        value: '0',
+                        checked: 'checked',
+                        class: 'form-check-input'
+                    }).add($('<label>').attr('for', 'none').text('None')));
+
+                    cashiers.forEach(function(cashier) {
+                        var radioBtn = $('<input>').attr({
+                            type: 'radio',
+                            name: 'preferred_doctor',
+                            id: 'doctor_' + cashier.cashier_id,
+                            value: cashier.cashier_id,
+                            class: 'form-check-input'
+                        });
+                        var label = $('<label>').attr('for', 'doctor_' + cashier.cashier_id).text(cashier.name);
+                        var wrapper = $('<div>').addClass('form-check').append(radioBtn).append(label);
+                        doctorList.append(wrapper);
                     });
+                } else {
+                    console.log('Error fetching active cashiers:', response.msg);
                 }
-            });
+            },
+            error: function(jqXHR, textStatus, errorThrown) {
+                console.log('Error fetching active cashiers:', textStatus, errorThrown);
+            }
+        });
+    }
 
-            function fetchActiveCashiers() {
+    $('#queue-form').submit(function(e) {
+        e.preventDefault();
+        var form = $(this);
+        form.find('.pop-msg').remove();
+        var el = $('<div>').addClass('alert pop-msg').hide();
+        form.find('button[type="submit"]').attr('disabled', true);
+
+        // Show loading animation
+        var loadingEl = $('<div>').addClass('loading-animation').text('Loading...').css({
+            position: 'fixed',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            zIndex: 1000,
+            fontSize: '1.5rem',
+            color: '#ffffff',
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            padding: '20px',
+            borderRadius: '10px'
+        });
+        $('body').append(loadingEl);
+
+        $.ajax({
+            url: './Actions.php?a=save_queue',
+            method: 'POST',
+            data: form.serialize(),
+            dataType: 'JSON',
+            error: function(jqXHR, textStatus, errorThrown) {
+                console.log('Error saving data:', textStatus, errorThrown);
+                el.addClass('alert-danger').text("An error occurred while saving data: " + textStatus + ' - ' + errorThrown);
+                form.find('button[type="submit"]').attr('disabled', false);
+                form.prepend(el);
+                el.show('slow');
+                loadingEl.remove(); // Remove loading animation
+            },
+            success: function(resp) {
+                if (resp.status == 'success') {
+                    uni_modal("Your Queue", "get_queue.php?success=true&id=" + resp.id);
+                    $('#uni_modal').on('hide.bs.modal', function(e) {
+                        // Optional callback for when the modal is hidden
+                    });
+
+                } else if (resp.status == 'failed' && !!resp.msg) {
+                    el.addClass('alert-' + resp.status).text(resp.msg);
+                    form.prepend(el);
+                    el.show('slow');
+                } else {
+                    el.addClass('alert-' + resp.status).text("An Error occurred.");
+                    form.prepend(el);
+                    el.show('slow');
+                }
+                form.find('button[type="submit"]').attr('disabled', false);
+                loadingEl.remove(); // Remove loading animation
+            }
+        });
+    });
+
+    $('#scan-qr-btn').on('click', function() {
+        $('#qr-reader').toggle();
+        if ($('#qr-reader').is(':visible')) {
+            startQRScanner();
+        } else {
+            stopQRScanner();
+        }
+    });
+
+    var html5QrCode;
+
+    function startQRScanner() {
+        html5QrCode = new Html5Qrcode("qr-reader");
+        html5QrCode.start({
+            facingMode: "environment"
+        }, {
+            fps: 10,
+            qrbox: 250
+        }, function(qrCodeMessage) {
+            try {
+                var qrData = JSON.parse(qrCodeMessage);
+
+                console.log('Decoded QR Data:', qrData);
+                fetchPatientData('', '', qrData.encrypted_unique_person_id);
+                $('#qr-reader').hide();
+                stopQRScanner();
+
+                // Make AJAX request to update last scanned datetime
                 $.ajax({
-                    url: './Actions.php?a=get_active_cashiers',
-                    method: 'GET',
-                    dataType: 'JSON',
+                    url: 'update_last_scanned.php',
+                    type: 'POST',
+                    data: {
+                        encrypted_unique_person_id: qrData.encrypted_unique_person_id
+                    },
                     success: function(response) {
-                        if (response.status === 'success') {
-                            var cashiers = response.data;
-                            var doctorList = $('#doctor-list').empty();
-                            doctorList.append($('<input>').attr({
-                                type: 'radio',
-                                name: 'preferred_doctor',
-                                id: 'none',
-                                value: '0',
-                                checked: 'checked',
-                                class: 'form-check-input'
-                            }).add($('<label>').attr('for', 'none').text('None')));
-
-                            cashiers.forEach(function(cashier) {
-                                var radioBtn = $('<input>').attr({
-                                    type: 'radio',
-                                    name: 'preferred_doctor',
-                                    id: 'doctor_' + cashier.cashier_id,
-                                    value: cashier.cashier_id,
-                                    class: 'form-check-input'
-                                });
-                                var label = $('<label>').attr('for', 'doctor_' + cashier.cashier_id).text(cashier.name);
-                                var wrapper = $('<div>').addClass('form-check').append(radioBtn).append(label);
-                                doctorList.append(wrapper);
-                            });
-                        } else {
-                            console.log('Error fetching active cashiers:', response.msg);
+                        try {
+                            var result = JSON.parse(response);
+                            if (result.status === 'success') {
+                                console.log('Last scanned datetime updated successfully.');
+                            } else {
+                                console.error('Failed to update last scanned datetime:', result.message);
+                            }
+                        } catch (error) {
+                            console.error('Error parsing response JSON:', error, response);
                         }
                     },
-                    error: function(jqXHR, textStatus, errorThrown) {
-                        console.log('Error fetching active cashiers:', textStatus, errorThrown);
+                    error: function(xhr, status, error) {
+                        console.error('AJAX request failed:', error);
                     }
                 });
+            } catch (error) {
+                console.log('Error parsing QR code message:', error);
             }
-
-            $(function() {
-                $('#queue-form').submit(function(e) {
-                    e.preventDefault();
-                    var form = $(this);
-                    form.find('.pop-msg').remove();
-                    var el = $('<div>').addClass('alert pop-msg').hide();
-                    form.find('button[type="submit"]').attr('disabled', true);
-
-                    // Show loading animation
-                    var loadingEl = $('<div>').addClass('loading-animation').text('Loading...').css({
-                        position: 'fixed',
-                        top: '50%',
-                        left: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        zIndex: 1000,
-                        fontSize: '1.5rem',
-                        color: '#ffffff',
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        padding: '20px',
-                        borderRadius: '10px'
-                    });
-                    $('body').append(loadingEl);
-
-                    $.ajax({
-                        url: './Actions.php?a=save_queue',
-                        method: 'POST',
-                        data: form.serialize(),
-                        dataType: 'JSON',
-                        error: function(jqXHR, textStatus, errorThrown) {
-                            console.log('Error saving data:', textStatus, errorThrown);
-                            el.addClass('alert-danger').text("An error occurred while saving data: " + textStatus + ' - ' + errorThrown);
-                            form.find('button[type="submit"]').attr('disabled', false);
-                            form.prepend(el);
-                            el.show('slow');
-                            loadingEl.remove(); // Remove loading animation
-                        },
-                        success: function(resp) {
-
-                            if (resp.status == 'success') {
-                                uni_modal("Your Queue", "get_queue.php?success=true&id=" + resp.id);
-                                $('#uni_modal').on('hide.bs.modal', function(e) {
-                                    
-                                });
-
-                            } else if (resp.status == 'failed' && !!resp.msg) {
-                                el.addClass('alert-' + resp.status).text(resp.msg);
-                                form.prepend(el);
-                                el.show('slow');
-                            } else {
-                                el.addClass('alert-' + resp.status).text("An Error occurred.");
-                                form.prepend(el);
-                                el.show('slow');
-                            }
-                            form.find('button[type="submit"]').attr('disabled', false);
-                            loadingEl.remove(); // Remove loading animation
-                        }
-                    });
-                });
-            });
-
-
-            $('#scan-qr-btn').on('click', function() {
-                $('#qr-reader').toggle();
-                if ($('#qr-reader').is(':visible')) {
-                    startQRScanner();
-                } else {
-                    stopQRScanner();
-                }
-            });
-
-            var html5QrCode;
-
-            function startQRScanner() {
-                html5QrCode = new Html5Qrcode("qr-reader");
-                html5QrCode.start({
-                    facingMode: "environment"
-                }, {
-                    fps: 10,
-                    qrbox: 250
-                }, function(qrCodeMessage) {
-                    try {
-                        var qrData = JSON.parse(qrCodeMessage);
-
-                        console.log('Decoded QR Data:', qrData);
-                        fetchPatientData('', '', qrData.encrypted_unique_person_id);
-                        $('#qr-reader').hide();
-                        stopQRScanner();
-
-                        // Make AJAX request to update last scanned datetime
-                        $.ajax({
-                            url: 'update_last_scanned.php',
-                            type: 'POST',
-                            data: {
-                                encrypted_unique_person_id: qrData.encrypted_unique_person_id
-                            },
-                            success: function(response) {
-                                try {
-                                    var result = JSON.parse(response);
-                                    if (result.status === 'success') {
-                                        console.log('Last scanned datetime updated successfully.');
-                                    } else {
-                                        console.error('Failed to update last scanned datetime:', result.message);
-                                    }
-                                } catch (error) {
-                                    console.error('Error parsing response JSON:', error, response);
-                                }
-                            },
-                            error: function(xhr, status, error) {
-                                console.error('AJAX request failed:', error);
-                            }
-                        });
-                    } catch (error) {
-                        console.log('Error parsing QR code message:', error);
-                    }
-                }, function(errorMessage) {
-                    console.log('QR Code Error:', errorMessage);
-                });
-            }
-
-            function stopQRScanner() {
-                if (html5QrCode) {
-                    html5QrCode.stop().then(function(ignore) {
-                        html5QrCode.clear();
-                    }).catch(function(err) {
-                        console.log(err);
-                    });
-                }
-            }
-
-            // Call fetchActiveCashiers function on page load
-            fetchActiveCashiers();
+        }, function(errorMessage) {
+            console.log('QR Code Error:', errorMessage);
         });
-    </script>
+    }
+
+    function stopQRScanner() {
+        if (html5QrCode) {
+            html5QrCode.stop().then(function(ignore) {
+                html5QrCode.clear();
+            }).catch(function(err) {
+                console.log(err);
+            });
+        }
+    }
+
+    // Call fetchActiveCashiers function on page load
+    fetchActiveCashiers();
+});
+
+</script>
+
 
 
 

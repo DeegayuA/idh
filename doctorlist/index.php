@@ -79,7 +79,6 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
 
         #page-container {
             flex: 1;
-            padding: 20px;
         }
 
         .navbar-brand {
@@ -110,7 +109,6 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
             border-radius: var(--border-radius);
             box-shadow: var(--box-shadow);
             padding: 20px;
-            margin-bottom: 20px;
         }
 
         @media (max-width: 720px) {
@@ -232,7 +230,7 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'home';
                 </div>
             </div>
         </nav>
-        <div class="py-3" id="page-container">
+        <div class="" id="page-container">
             <?php 
                 if (isset($_SESSION['flashdata'])):
             ?>
