@@ -337,7 +337,7 @@ class DBConnection extends SQLite3
         foreach ($decryptedIds as $id) {
             if ($id === $decrypted_param) {
                 $matchingId = $id;
-                echo $matchingId;
+                // echo $matchingId;
                 break;
             }
         }
@@ -358,7 +358,7 @@ class DBConnection extends SQLite3
 
         // Step 5: If no matching row was found, return null
         // Debugging: Output a message indicating no matching row was found
-        echo "No matching row found for encrypted_unique_person_id: " . $encrypted_unique_person_id;
+        // echo "No matching row found for encrypted_unique_person_id: " . $encrypted_unique_person_id;
         return null;
     }
 

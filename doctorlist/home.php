@@ -155,8 +155,8 @@ function adjustBrightness($hex, $steps)
 
     .card-custom {
         width: 100%;
-        max-width: 400px;
-        border-radius: 15px;
+        max-width: 450px;
+        border-radius: 1rem;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     }
 
