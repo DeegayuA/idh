@@ -140,7 +140,7 @@ function adjustBrightness($hex, $steps)
     .total-queue-banner h2 {
         margin: 0;
         color: var(--text-color);
-        
+
     }
 
     .full-height {
@@ -184,23 +184,23 @@ function adjustBrightness($hex, $steps)
     }
 
     .alert-banner {
-    position: absolute;
-    top: 70px; 
-    z-index: 1000;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: var(--alert-background-color);
-    padding: 0.7rem;
-    color: #fff;
-    border-radius: 0.5rem;
-    opacity: 0;
-    transition: opacity 0.8s ease-in-out;
-}
+        position: absolute;
+        top: 70px;
+        z-index: 1000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: var(--alert-background-color);
+        padding: 0.7rem;
+        color: #fff;
+        border-radius: 0.5rem;
+        opacity: 0;
+        transition: opacity 0.8s ease-in-out;
+    }
 
-.alert-banner.show {
-    opacity: 1;
-}
+    .alert-banner.show {
+        opacity: 1;
+    }
 
 
     @media (prefers-color-scheme: light) {
@@ -279,10 +279,10 @@ function adjustBrightness($hex, $steps)
 <div class="container full-height">
     <div class="row full-height center-content">
         <div class="d-flex flex-wrap">
-        <h3 id="alert-banner" class="alert-banner text-center container"></h3>
+            <h3 id="alert-banner" class="alert-banner text-center container"></h3>
             <div class="banner total-queue-banner text-center">
                 <h3>
-                    
+
                     Total Patients Waiting: <span id="total_patients_count">0</span>,
                     Monitor Connection: <span id="websocket_status"><span style="color:orange;">?</span></span>,
                     IoT Connection: <span id="esp32_status"><span style="color:orange;">?</span></span>
@@ -352,175 +352,181 @@ function adjustBrightness($hex, $steps)
 
     };
 
-    $(document).ready(function () {
-    var in_queue = {};
-    var alertQueue = [];
-    var alertOpen = false;
+    $(document).ready(function() {
+        var in_queue = {};
+        var alertQueue = [];
+        var alertOpen = false;
 
-    updateQueueCounts(); // Initial update
+        updateQueueCounts(); // Initial update
 
-    $('[id^=next_queue_]').click(function () {
-        var doctorRoomNumber = $(this).attr('id').split('_')[2];
-        get_queue(doctorRoomNumber);
-        updateQueueCounts();
-    });
-
-    $('[id^=notify_]').click(function () {
-        var doctorRoomNumber = $(this).attr('id').split('_')[1];
-
-        if (in_queue[doctorRoomNumber] && in_queue[doctorRoomNumber].queue) {
-            update_queue_info(in_queue[doctorRoomNumber], doctorRoomNumber);
+        $('[id^=next_queue_]').click(function() {
+            var doctorRoomNumber = $(this).attr('id').split('_')[2];
+            get_queue(doctorRoomNumber);
             updateQueueCounts();
-        } else {
-            queueAlert("No Queue Available for Doctor Room " + doctorRoomNumber, doctorRoomNumber);
+        });
+
+        $('[id^=notify_]').click(function() {
+            var doctorRoomNumber = $(this).attr('id').split('_')[1];
+
+            if (in_queue[doctorRoomNumber] && in_queue[doctorRoomNumber].queue) {
+                update_queue_info(in_queue[doctorRoomNumber], doctorRoomNumber);
+                updateQueueCounts();
+            } else {
+                queueAlert("No Queue Available for Doctor Room " + doctorRoomNumber, doctorRoomNumber);
+            }
+        });
+
+        function queueAlert(message, doctorRoomNumber) {
+            alertQueue.push({
+                message: message,
+                doctorRoomNumber: doctorRoomNumber
+            });
+            if (!alertOpen) {
+                showNextAlert();
+            }
+        }
+
+        function showNextAlert() {
+            if (alertQueue.length > 0) {
+                var alertData = alertQueue.shift();
+                showAlertBanner(alertData.message, alertData.doctorRoomNumber);
+            }
+        }
+
+        function showAlertBanner(message, doctorRoomNumber) {
+            alertOpen = true;
+
+            var doctorColor = getComputedStyle(document.documentElement).getPropertyValue(`--doctor-${doctorRoomNumber}-color`);
+            var emojis = ["⚠️", "🚨", "❗"];
+            var emoji = emojis[doctorRoomNumber % emojis.length];
+
+            $('#alert-banner')
+                .css('background-color', doctorColor)
+                .html(`${emoji} ${message}`)
+                .addClass('show')
+                .fadeIn(300) // Ensure this aligns with your transition duration
+                .delay(2000) // Duration to keep visible
+                .fadeOut(500, function() {
+                    $(this).removeClass('show');
+                    alertOpen = false;
+                    showNextAlert();
+                });
+        }
+
+        function updateQueueCounts() {
+            $.ajax({
+                url: './../Actions.php?a=getQueueCounts',
+                method: 'POST',
+                dataType: 'json',
+                success: function(resp) {
+                    if (resp.total !== undefined) {
+                        $('#total_patients_count').text(resp.total);
+                    }
+                    for (var i = 1; i <= Object.keys(resp.doctors).length; i++) {
+                        var roomName = 'Room' + i;
+                        var patientCount = resp.doctors[roomName];
+                        $('#total_patients_' + i).text(patientCount);
+                    }
+                },
+                error: function(err) {
+                    console.error('Error fetching queue counts:', err);
+                }
+            });
+        }
+
+        function get_queue(doctorId) {
+            $.ajax({
+                url: './../Actions.php?a=next_queue',
+                method: 'POST',
+                data: {
+                    doctor_id: doctorId
+                },
+                dataType: 'json',
+                error: function(err) {
+                    console.log(err);
+                },
+                success: function(resp) {
+                    if (resp.status === 'success' && resp.data !== null) {
+                        in_queue[doctorId] = resp.data;
+                        update_queue_info(resp.data, doctorId);
+                    } else {
+                        in_queue[doctorId] = null;
+                        resetQueueInfo(doctorId);
+                        queueAlert("No Queue Available for Doctor Room " + doctorId, doctorId);
+                    }
+                }
+            });
+        }
+
+        function resetQueueInfo(doctorId) {
+            var queueElementId = '#queue_' + doctorId;
+            var customerNameElementId = '#customer_name_' + doctorId;
+            var customerAgeElementId = '#customer_age_' + doctorId;
+            var customerSexElementId = '#customer_sex_' + doctorId;
+
+            $(queueElementId).text("----");
+            $(customerNameElementId).text("Unknown");
+            $(customerAgeElementId).text("N/A");
+            $(customerSexElementId).text("N/A");
+        }
+
+        function update_queue_info(queue_data, doctorId) {
+            var queueElementId = '#queue_' + doctorId;
+            var customerNameElementId = '#customer_name_' + doctorId;
+            var customerAgeElementId = '#customer_age_' + doctorId;
+            var customerSexElementId = '#customer_sex_' + doctorId;
+
+            $(queueElementId).text(queue_data.queue || "----");
+            $(customerNameElementId).text(queue_data.customer_name || "Unknown");
+            $(customerAgeElementId).text(queue_data.age || "N/A");
+            $(customerSexElementId).text(queue_data.sex || "N/A");
+
+            const message = JSON.stringify({
+                type: 'queue',
+                cashier_id: doctorId,
+                qid: queue_data.queue_id
+            });
+
+            websocket.send(message);
+        }
+
+
+        // ESP32 WebSocket Integration
+        try {
+            var esp32_websocket = new WebSocket("ws://IDHQ_by_EDIC.local:81/");
+
+            esp32_websocket.onopen = function(event) {
+                console.log('ESP Socket is open!');
+                $('#esp32_status').html('<span style="color:green;">&#x2713;</span>'); // Green arrow for open
+            };
+
+            esp32_websocket.onclose = function(event) {
+                console.log('ESP Socket has been closed!');
+                $('#esp32_status').html('<span style="color:red;">&#10060;</span>'); // Red cross for closed
+            };
+
+            esp32_websocket.onmessage = function(event) {
+                var message = JSON.parse(event.data);
+                var doctorRoomNumber = message.doctorRoomNumber;
+
+                if (message.press === "single") {
+                    if (alertOpen) {
+                        alertOpen = false; // Close the alert
+                        console.log("Alert dismissed via IoT device");
+                    } else if (in_queue[doctorRoomNumber] && in_queue[doctorRoomNumber].queue) {
+                        update_queue_info(in_queue[doctorRoomNumber], doctorRoomNumber);
+                        updateQueueCounts(); // Update the total patient count
+                    } else {
+                        showAlertBanner("No Queue Available", doctorRoomNumber);
+                    }
+                } else if (message.press === "double") {
+                    get_queue(doctorRoomNumber);
+                    updateQueueCounts(); // Update the total patient count after getting the next queue
+                }
+            };
+
+        } catch (err) {
+            console.warn("ESP32 device not connected:", err);
         }
     });
-
-    function queueAlert(message, doctorRoomNumber) {
-        alertQueue.push({ message: message, doctorRoomNumber: doctorRoomNumber });
-        if (!alertOpen) {
-            showNextAlert();
-        }
-    }
-
-    function showNextAlert() {
-        if (alertQueue.length > 0) {
-            var alertData = alertQueue.shift();
-            showAlertBanner(alertData.message, alertData.doctorRoomNumber);
-        }
-    }
-
-    function showAlertBanner(message, doctorRoomNumber) {
-    alertOpen = true;
-
-    var doctorColor = getComputedStyle(document.documentElement).getPropertyValue(`--doctor-${doctorRoomNumber}-color`);
-    var emojis = ["⚠️", "🚨", "❗"];
-    var emoji = emojis[doctorRoomNumber % emojis.length];
-
-    $('#alert-banner')
-        .css('background-color', doctorColor)
-        .html(`${emoji} ${message}`)
-        .addClass('show')
-        .fadeIn(300) // Ensure this aligns with your transition duration
-        .delay(2000) // Duration to keep visible
-        .fadeOut(500, function () {
-            $(this).removeClass('show');
-            alertOpen = false;
-            showNextAlert();
-        });
-}
-
-    function updateQueueCounts() {
-        $.ajax({
-            url: './../Actions.php?a=getQueueCounts',
-            method: 'POST',
-            dataType: 'json',
-            success: function (resp) {
-                if (resp.total !== undefined) {
-                    $('#total_patients_count').text(resp.total);
-                }
-                for (var i = 1; i <= Object.keys(resp.doctors).length; i++) {
-                    var roomName = 'Room' + i;
-                    var patientCount = resp.doctors[roomName];
-                    $('#total_patients_' + i).text(patientCount);
-                }
-            },
-            error: function (err) {
-                console.error('Error fetching queue counts:', err);
-            }
-        });
-    }
-
-    function get_queue(doctorId) {
-        $.ajax({
-            url: './../Actions.php?a=next_queue',
-            method: 'POST',
-            data: {
-                doctor_id: doctorId
-            },
-            dataType: 'json',
-            error: function (err) {
-                console.log(err);
-            },
-            success: function (resp) {
-                if (resp.status === 'success' && resp.data !== null) {
-                    in_queue[doctorId] = resp.data;
-                    update_queue_info(resp.data, doctorId);
-                } else {
-                    in_queue[doctorId] = null;
-                    resetQueueInfo(doctorId);
-                    queueAlert("No Queue Available for Doctor Room " + doctorId, doctorId);
-                }
-            }
-        });
-    }
-
-    function resetQueueInfo(doctorId) {
-        var queueElementId = '#queue_' + doctorId;
-        var customerNameElementId = '#customer_name_' + doctorId;
-        var customerAgeElementId = '#customer_age_' + doctorId;
-        var customerSexElementId = '#customer_sex_' + doctorId;
-
-        $(queueElementId).text("----");
-        $(customerNameElementId).text("Unknown");
-        $(customerAgeElementId).text("N/A");
-        $(customerSexElementId).text("N/A");
-    }
-
-    function update_queue_info(queue_data, doctorId) {
-        var queueElementId = '#queue_' + doctorId;
-        var customerNameElementId = '#customer_name_' + doctorId;
-        var customerAgeElementId = '#customer_age_' + doctorId;
-        var customerSexElementId = '#customer_sex_' + doctorId;
-
-        $(queueElementId).text(queue_data.queue || "----");
-        $(customerNameElementId).text(queue_data.customer_name || "Unknown");
-        $(customerAgeElementId).text(queue_data.age || "N/A");
-        $(customerSexElementId).text(queue_data.sex || "N/A");
-
-        const message = JSON.stringify({
-            type: 'queue',
-            cashier_id: doctorId,
-            qid: queue_data.queue_id
-        });
-
-        websocket.send(message);
-    }
-
-
-    // ESP32 WebSocket Integration
-    try {
-        var esp32_websocket = new WebSocket("ws://IDHQ_by_EDIC.local:81/");
-
-        esp32_websocket.onopen = function(event) {
-            console.log('ESP Socket is open!');
-            $('#esp32_status').html('<span style="color:green;">&#x2713;</span>'); // Green arrow for open
-        };
-
-        esp32_websocket.onclose = function(event) {
-            console.log('ESP Socket has been closed!');
-            $('#esp32_status').html('<span style="color:red;">&#10060;</span>'); // Red cross for closed
-        };
-
-        esp32_websocket.onmessage = function(event) {
-            var message = JSON.parse(event.data);
-            var doctorRoomNumber = message.doctorRoomNumber;
-            if (message.press === "single") {
-                if (alertOpen) {
-                    alertOpen = false; // Close the alert
-                    console.log("Alert dismissed via IoT device");
-                } else if (in_queue[doctorRoomNumber] && in_queue[doctorRoomNumber].queue) {
-                    update_queue_info(in_queue[doctorRoomNumber], doctorRoomNumber);
-                } else {
-                    showAlertBanner("No Queue Available");
-                }
-            } else if (message.press === "double") {
-                get_queue(doctorRoomNumber);
-            }
-        };
-    } catch (err) {
-        console.warn("ESP32 device not connected:", err);
-    }
-});
-
 </script>
