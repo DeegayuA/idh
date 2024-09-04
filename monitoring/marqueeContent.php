@@ -25,7 +25,10 @@ if ($totalActiveDoctorsResult) {
 }
 
 // Fetch total patients in the queue
-$totalPatientsInQueueQuery = "SELECT COUNT(*) as total FROM queue_list WHERE status = 0"; 
+$totalPatientsInQueueQuery = "SELECT COUNT(*) as total 
+                              FROM queue_list 
+                              WHERE status = 0 
+                              AND DATE(date_created) = DATE('now')";
 $totalPatientsInQueueResult = $conn->query($totalPatientsInQueueQuery);
 if ($totalPatientsInQueueResult) {
     $totalPatientsInQueueRow = $totalPatientsInQueueResult->fetchArray(SQLITE3_ASSOC);
@@ -56,8 +59,8 @@ $localNewsEnglish = [
 ];
 
 $localNewsSinhala = [
-    "මෙය ජාතික බෝවන රෝග විද්‍යායතනය සහ කැලණිය විශ්වවිද්‍යාලය මගින්, {$newNewsDate} දින ආරම්භ කරන ලද මෙය නියමු ව්‍යාපෘතියකි.",
-    "ඔබ දන්නවාද? ජාතික බෝවන රෝග විද්‍යායතනය, ඒදින සිට {$totalPatients} කට වැඩි රෝගීන් සාර්ථකව මෙම ව්‍යාපෘතිය මගින් ප්‍රතිකාර කර ඇත. මේ වන විට පෝලිම තුළ රෝගීන් සංඛ්‍යාව: {$totalPatientsInQueue}."
+    "මෙය ජාතික බෝවන රෝග විද්‍යායතනය සහ කැලණිය විශ්වවිද්‍යාලය මගින්, {$newNewsDate} දින ආරම්භ කරන ලද නියමු ව්‍යාපෘතියකි.",
+    "ඔබ දන්නවාද? ජාතික බෝවන රෝග විද්‍යායතනය, ඒදින සිට {$totalPatients} කට වැඩි රෝගීන් සංඛ්‍යාවකගේ කාලය ඉතිරි කිරිමට මෙම ව්‍යාපෘතිය සමත් වී ඇත. මේ වන විට පෝලිම තුළ රෝගීන් සංඛ්‍යාව: {$totalPatientsInQueue}."
 ];
 
 $response = [
@@ -72,4 +75,3 @@ $response = [
 ];
 
 echo json_encode($response);
-?>
