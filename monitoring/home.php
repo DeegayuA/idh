@@ -243,30 +243,30 @@
       }
     }
 
-    .footer{
+    .footer {
       padding: 0 5rem;
     }
+
     .footer-logos {
-  text-align: center;
-  margin-top: 2rem;
-}
+      text-align: center;
+      margin-top: 2rem;
+    }
 
-.footer-logos img {
-  height: 50px;
-  width: auto;
-  margin: 10px;
-}
+    .footer-logos img {
+      height: 50px;
+      width: auto;
+      margin: 10px;
+    }
 
-.QR-logos img {
-  height: 100px;
-  aspect-ratio: 1;
-}
+    .QR-logos img {
+      height: 100px;
+      aspect-ratio: 1;
+    }
 
-video{
-  height: 90%;
-  aspect-ratio: 16/9;
-}
-
+    video {
+      height: 90%;
+      aspect-ratio: 16/9;
+    }
   </style>
 </head>
 
@@ -319,30 +319,36 @@ video{
       </div>
     </div>
     <div class="footer d-flex justify-content-between align-items-center py-4">
-  <div id="datetimefield" class="text-center">
-    <div class="fs-1 fw-bold time"></div>
-    <div class="fs-5 fw-bold date"></div>
-  </div>
-  <div class="footer-logos">
-    <span>Powered by EDIC UOK</span>
-    <div class="d-flex align-items-center justify-content-center">
-      <img src="./../logos/EDICWebLogo.png" alt="EDIC Web Logo">
-      <img src="./../logos/university-of-kelaniya-logo.png" alt="University of Kelaniya Logo">
+      <div id="datetimefield" class="text-center">
+        <div class="fs-1 fw-bold time"></div>
+        <div class="fs-5 fw-bold date"></div>
+      </div>
+      <div class="footer-logos">
+        <span>Powered by EDIC UOK</span>
+        <div class="d-flex align-items-center justify-content-center">
+          <img src="./../logos/EDICWebLogo.png" alt="EDIC Web Logo">
+          <img src="./../logos/university-of-kelaniya-logo.png" alt="University of Kelaniya Logo">
+        </div>
+        Connection: <span id="websocket_status"><span style="color:orange;">?</span></span>
+
+      </div>
+      <div class="QR-logos">
+        <img src="./../logos/QR.png" alt="qr">
+      </div>
     </div>
-  </div>
-  <div class="QR-logos">
-    <img src="./../logos/QR.png" alt="qr">
-  </div>
-</div>
   </div>
 
   <script>
     $(document).ready(() => {
       let websocket = new WebSocket("ws://<?php echo $_SERVER['SERVER_NAME'] ?>:2306/queuing/php-sockets.php");
       websocket.onopen = () => console.log('Socket is open!');
+      $('#websocket_status').html('<span style="color:green;">&#x2713;</span>'); // Green arrow for open
+
+
       websocket.onclose = () => {
         console.log('Socket has been closed!');
         websocket = new WebSocket("ws://<?php echo $_SERVER['SERVER_NAME'] ?>:2306/queuing/php-sockets.php");
+        $('#websocket_status').html('<span style="color:red;">&#10060;</span>'); // Red cross for closed
       };
 
       let in_queue = {};
@@ -400,22 +406,30 @@ video{
       };
 
       const time_loop = () => {
-        const mos = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-        let datetime = new Date();
-        let hour = datetime.getHours();
-        let min = datetime.getMinutes();
-        let s = datetime.getSeconds();
-        let ampm = hour >= 12 ? "PM" : "AM";
-        let mo = mos[datetime.getMonth()];
-        let d = datetime.getDate();
-        let yr = datetime.getFullYear();
-        hour = hour >= 12 ? hour - 12 : hour;
-        hour = String(hour).padStart(2, '0');
-        min = String(min).padStart(2, '0');
-        s = String(s).padStart(2, '0');
-        $('.time').text(`${hour}:${min}:${s} ${ampm}`);
-        $('.date').text(`${mo} ${d}, ${yr}`);
-      };
+  const mos = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  let datetime = new Date();
+  
+  let hour = datetime.getHours();
+  let min = datetime.getMinutes();
+  let s = datetime.getSeconds();
+  let ampm = hour >= 12 ? "PM" : "AM";
+  
+  // Convert hour to 12-hour format
+  hour = hour % 12;
+  hour = hour ? hour : 12; // Hour '0' should be '12'
+  
+  let mo = mos[datetime.getMonth()];
+  let d = datetime.getDate();
+  let yr = datetime.getFullYear();
+  
+  min = String(min).padStart(2, '0');
+  s = String(s).padStart(2, '0');
+  $('.time').text(`${hour}:${min}:${s} ${ampm}`);
+  $('.date').text(`${mo} ${d}, ${yr}`);
+};
+
+
+
 
       const _resize_elements = () => {
         let window_height = $(window).height();
