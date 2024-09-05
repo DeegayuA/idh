@@ -8,7 +8,7 @@
 #include <ArduinoJson.h>
 #include <Fonts/FreeSans12pt7b.h>
 #include <ESPmDNS.h>
-#include <OneButton.h>  // Include the OneButton library
+#include <OneButton.h>
 
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
@@ -155,7 +155,7 @@ const unsigned char epd_bitmap_kelani_logo[] PROGMEM = {
 
 const char *debugSsid = "EDIC 2";        // Debug WiFi SSID
 const char *debugPassword = "00000000";  // Debug WiFi Password
-// String serverIPAddress = "192.168.137.224";
+// String serverIPAddress = "192.168.137.220";
 String serverIPAddress = "172.16.21.27";
 
 WebSocketsServer webSocket = WebSocketsServer(81);
@@ -164,7 +164,7 @@ WebSocketsServer webSocket = WebSocketsServer(81);
 #define BUTTON_FORWARD_PIN 13
 #define BUTTON_BACKWARD_PIN 12
 #define BUTTON_PRESS_PIN 14
-#define BUZZER_PIN 4 
+#define BUZZER_PIN 4
 
 // RGB LED Pins
 const int LED_PIN_RED = 32;
@@ -183,152 +183,178 @@ OneButton forwardButton(BUTTON_FORWARD_PIN, true);
 OneButton backwardButton(BUTTON_BACKWARD_PIN, true);
 OneButton pressButton(BUTTON_PRESS_PIN, true);
 
+void setupButtons();
+void setupWiFi();
+void setupDisplay();
+void setupWebSocket();
+void handleForwardButton();
+void handleBackwardButton();
+void handleSinglePress();
+void handleDoublePress();
+void detectDualButtonPress();
+void soundTone(int frequency, int duration);
+void blinkLED(int red, int green, int blue, int times, int fadeOutDelay);
+void fetchDoctorData();
+void showDoctor(int index);
+void setColor(const char *color);
+void webSocketEvent(uint8_t client_num, WStype_t type, uint8_t *payload, size_t length);
+
+
 void setup() {
+  Serial.begin(115200);
+  
   pinMode(LED_PIN_RED, OUTPUT);
   pinMode(LED_PIN_GREEN, OUTPUT);
   pinMode(LED_PIN_BLUE, OUTPUT);
-  pinMode(BUZZER_PIN, OUTPUT); 
+  pinMode(BUZZER_PIN, OUTPUT);
+  
+  soundTone(1000, 500);  
+  setupDisplay();
+  setupWiFi();
+  setupWebSocket();
+  setupButtons();
+  fetchDoctorData();
+}
 
-  Serial.begin(115200);
 
-  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
-    Serial.println(F("SSD1306 allocation failed"));
-    for (;;)
-      ;
-  }
-   // System power-on sound
-  soundPowerOn();
+void loop() {
+  webSocket.loop();
+  forwardButton.tick();
+  backwardButton.tick();
+  pressButton.tick();
+  detectDualButtonPress();
+  delay(10);
+}
 
-  showFullScreenMessage("Developed by");
-  delay(2000);
-
-  // Display the first bitmap (edic_Untitled_1)
-  showFullScreenBitmap(edic_Untitled_1);
-  delay(2000);  // Hold for 2 seconds
-
-  // Display the second bitmap (epd_bitmap_kelani_logo)
-  showFullScreenBitmap(epd_bitmap_kelani_logo);
-  delay(2000);  // Hold for 2 seconds
-
-  showFullScreenMessage("Ready to Connect");
-  delay(2000);
-
-  // Connect to the debug WiFi network
+void setupWiFi() {
   WiFi.begin(debugSsid, debugPassword);
   Serial.print("Connecting to WiFi...");
+  
   while (WiFi.status() != WL_CONNECTED) {
     delay(1000);
     Serial.print(".");
   }
+  
   Serial.println();
   Serial.print("Connected to WiFi. IP address: ");
   Serial.println(WiFi.localIP());
-
-  // Start mDNS service
+  
   if (!MDNS.begin("IDHQ_by_EDIC")) {
     Serial.println("Error setting up MDNS responder!");
-    while (1) {
-      delay(1000);
-    }
+    while (1) delay(1000);
   }
+  
   Serial.println("mDNS responder started");
+}
 
-  fetchDoctorData();
-
+void setupWebSocket() {
   webSocket.begin();
   webSocket.onEvent(webSocketEvent);
+}
 
-  // Attach the callback functions for single and double presses
+void setupDisplay() {
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for (;;);
+  }
+  
+  showFullScreenMessage("Developed by");
+  delay(2000);
+  showFullScreenBitmap(edic_Untitled_1);
+  delay(2000);
+  showFullScreenBitmap(epd_bitmap_kelani_logo);
+  delay(2000);
+  showFullScreenMessage("Ready to Connect");
+  delay(2000);
+}
+
+void setupButtons() {
   forwardButton.attachClick(handleForwardButton);
   backwardButton.attachClick(handleBackwardButton);
   pressButton.attachClick(handleSinglePress);
   pressButton.attachDoubleClick(handleDoublePress);
 }
 
-
-void loop() {
-  webSocket.loop();
-
-  forwardButton.tick();   // Handle the forward button events
-  backwardButton.tick();  // Handle the backward button events
-  pressButton.tick();     // Handle the press button events
-
-  delay(10);
+void detectDualButtonPress() {
+  bool forwardPressed = digitalRead(BUTTON_FORWARD_PIN) == LOW;
+  bool backwardPressed = digitalRead(BUTTON_BACKWARD_PIN) == LOW;
+  
+  static bool isDualPress = false;
+  static unsigned long buttonPressStartTime = 0;
+  
+  if (forwardPressed && backwardPressed) {
+    if (!isDualPress) {
+      buttonPressStartTime = millis();
+      isDualPress = true;
+    } else if (millis() - buttonPressStartTime >= 5000) {
+      Serial.println("Restarting ESP32...");
+      ESP.restart();
+    }
+  } else {
+    isDualPress = false;
+  }
 }
 
 void handleForwardButton() {
-  soundButtonPress();
+  soundTone(1500, 300);
   currentDoctorIndex = (currentDoctorIndex + 1) % numDoctors;
-  Serial.print("Incremented Doctor Index: ");
-  Serial.println(currentDoctorIndex);
-  showFullScreenMessage(doctorNames[currentDoctorIndex].c_str());
-  setColor(doctorColors[currentDoctorIndex].c_str());
-  
-
+  showDoctor(currentDoctorIndex);
 }
 
 void handleBackwardButton() {
-  soundButtonPress();
+  soundTone(1500, 300);
   currentDoctorIndex = (currentDoctorIndex - 1 + numDoctors) % numDoctors;
-  Serial.print("Decremented Doctor Index: ");
-  Serial.println(currentDoctorIndex);
-  showFullScreenMessage(doctorNames[currentDoctorIndex].c_str());
-  setColor(doctorColors[currentDoctorIndex].c_str());
-  
-
+  showDoctor(currentDoctorIndex);
 }
 
 void handleSinglePress() {
   Serial.println("Single press detected");
-  blinkLED(1, 500);
-  soundSingleClick();
+   blinkLED(255, 0, 0, 1, 500);
+  soundTone(2000, 300);
   webSocket.broadcastTXT("{\"action\": \"notify\", \"press\": \"single\", \"doctorRoomNumber\": " + String(currentDoctorIndex + 1) + "}");
-   
 }
 
 void handleDoublePress() {
   Serial.println("Double press detected");
-  blinkLED(2, 300);
-  soundDoubleClick();
+   blinkLED(0, 255, 0, 2, 300);
+  soundTone(1000, 200);
   webSocket.broadcastTXT("{\"action\": \"next\", \"press\": \"double\", \"doctorRoomNumber\": " + String(currentDoctorIndex + 1) + "}");
-   
 }
 
-void soundPowerOn() {
-  tone(BUZZER_PIN, 1000, 500);  // 1000 Hz tone for 500 ms
-  delay(500);
+void soundTone(int frequency, int duration) {
+  tone(BUZZER_PIN, frequency, duration);
+  delay(duration);
 }
 
-void soundButtonPress() {
-  tone(BUZZER_PIN, 1500, 300);  // 1500 Hz tone for 300 ms
-}
 
-void soundSingleClick() {
-  tone(BUZZER_PIN, 2000, 300);  // 2000 Hz tone for 300 ms
-}
+void blinkLED(int red, int green, int blue, int times, int delayTime) {
+  // Store the previous LED status
+  int prevRed = ledcRead(LED_PIN_RED);
+  int prevGreen = ledcRead(LED_PIN_GREEN);
+  int prevBlue = ledcRead(LED_PIN_BLUE);
 
-void soundDoubleClick() {
-  tone(BUZZER_PIN, 1000, 200);  // 1000 Hz tone for 200 ms
-  delay(200);
-  tone(BUZZER_PIN, 1000, 200);  // 1000 Hz tone for 200 ms
-}
+  Serial.printf("Blinking LED %d times with delay of %d ms.\n", times, delayTime);
 
-void noToneBuzzer() {
-  noTone(BUZZER_PIN);
-}
-
-void blinkLED(int times, int delayTime) {
   for (int i = 0; i < times; i++) {
-    digitalWrite(LED_PIN_RED, HIGH);
-    digitalWrite(LED_PIN_GREEN, HIGH);
-    digitalWrite(LED_PIN_BLUE, HIGH);
-    delay(delayTime);
-    digitalWrite(LED_PIN_RED, LOW);
-    digitalWrite(LED_PIN_GREEN, LOW);
-    digitalWrite(LED_PIN_BLUE, LOW);
+    // Turn on LEDs
+    ledcWrite(LED_PIN_RED, red);
+    ledcWrite(LED_PIN_GREEN, green);
+    ledcWrite(LED_PIN_BLUE, blue);
+    delay(500);
+    
+    // Turn off LEDs
+    ledcWrite(LED_PIN_RED, 0);
+    ledcWrite(LED_PIN_GREEN, 0);
+    ledcWrite(LED_PIN_BLUE, 0);
     delay(delayTime);
   }
+  
+  // Restore previous LED status
+  ledcWrite(LED_PIN_RED, prevRed);
+  ledcWrite(LED_PIN_GREEN, prevGreen);
+  ledcWrite(LED_PIN_BLUE, prevBlue);
 }
+
 
 void showFullScreenBitmap(const uint8_t *bitmap) {
   display.clearDisplay();
@@ -392,93 +418,100 @@ void showFullScreenMessage(const char *message) {
 void fetchDoctorData() {
   if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
-    String url = "http://" + String(serverIPAddress) + "/idh.github.io/doctorlist/doc_list.php";
-    Serial.println(url);
+    String url = "http://" + serverIPAddress + "/idh.github.io/doctorlist/doc_list.php";
     http.begin(url);
-    Serial.println("HTTP GET request started");
+    
     int httpResponseCode = http.GET();
-    Serial.printf("HTTP Response code: %d\n", httpResponseCode);
-
     if (httpResponseCode == 200) {
       String payload = http.getString();
-      Serial.println("HTTP GET request successful");
-      Serial.println("Payload: " + payload);
       DynamicJsonDocument doc(2048);
       DeserializationError error = deserializeJson(doc, payload);
-
       if (error) {
-        Serial.print(F("deserializeJson() failed: "));
-        Serial.println(error.f_str());
+        Serial.println(F("deserializeJson() failed"));
         return;
       }
-
+      
       numDoctors = doc["data"].size();
       for (int i = 0; i < numDoctors; i++) {
         doctorNames[i] = doc["data"][i]["name"].as<String>();
         doctorColors[i] = doc["data"][i]["color"].as<String>();
       }
-
+      
       showFullScreenMessage("System Ready");
+      Serial.printf("System Ready");
       delay(2000);
-
-      currentDoctorIndex = 0;
-      showFullScreenMessage(doctorNames[currentDoctorIndex].c_str());
-      setColor(doctorColors[currentDoctorIndex].c_str());
-
+      showDoctor(0);
     } else {
       Serial.printf("HTTP GET request failed: %d\n", httpResponseCode);
       showFullScreenMessage("No web connection");
+      fetchDoctorData();  // Retry
     }
-
+    
     http.end();
   } else {
     Serial.println("WiFi not connected");
   }
 }
 
-void setColor(const char *color) {
-  int red = 255, green = 255, blue = 255;  // Default to white
+void showDoctor(int index) {
+  showFullScreenMessage(doctorNames[index].c_str());
+  setColor(doctorColors[index].c_str());
+}
 
+
+void setColor(const char *color) {
+  int red = 255, green = 255, blue = 255;
+  
   if (color[0] == '#' && strlen(color) == 7) {
-    // Parse the hex color code
     unsigned long colorValue = strtoul(color + 1, NULL, 16);
     red = (colorValue >> 16) & 0xFF;
     green = (colorValue >> 8) & 0xFF;
     blue = colorValue & 0xFF;
   } else {
     Serial.println("Invalid color format");
-    return;  // Exit if the format is invalid
+    return;
   }
 
-  // Normalize and scale factors to enhance the color intensity
-  float scale = 1.85;  // Increase this value to make colors more vivid
-
-  // Calculate scaled values
+  float scale = 1.85;
   int scaledRed = constrain((int)(red * scale), 255, 0);
   int scaledGreen = constrain((int)(green * scale), 255, 0);
   int scaledBlue = constrain((int)(blue * scale), 255, 0);
 
-  // Invert the scaled values for common anode RGB LED
   int newRed = 255 - scaledRed;
   int newGreen = 255 - scaledGreen;
   int newBlue = 255 - scaledBlue;
 
-  // Apply the color to the LED
   analogWrite(LED_PIN_RED, newRed);
   analogWrite(LED_PIN_GREEN, newGreen);
   analogWrite(LED_PIN_BLUE, newBlue);
 }
-
-void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length) {
+void webSocketEvent(uint8_t client_num, WStype_t type, uint8_t *payload, size_t length) {
   switch (type) {
     case WStype_DISCONNECTED:
-      Serial.println("WebSocket Disconnected");
+      Serial.printf("[%u] Disconnected!\n", client_num);
+      showFullScreenMessage("No PC Connection");
+      blinkLED(255, 0, 0, 5, 100);
+      pcConnected = false;
+      delay(2000);
+      showFullScreenMessage("System Ready");
+      blinkLED(0, 0, 0, 0, 0);
       break;
+
     case WStype_CONNECTED:
-      Serial.println("WebSocket Connected");
+      Serial.printf("[%u] Connection from %s\n", client_num, webSocket.remoteIP(client_num).toString().c_str());
+      showFullScreenMessage("PC Connected");
+      blinkLED(0, 255, 0, 3, 200); 
+      pcConnected = true;
+      delay(2000);
+      showFullScreenMessage("System Ready");
+      blinkLED(0, 0, 0, 0, 0);
       break;
+
     case WStype_TEXT:
-      Serial.printf("WebSocket received text: %s\n", payload);
+      Serial.printf("[%u] Text: %s\n", client_num, payload);
+      break;
+
+    default:
       break;
   }
 }

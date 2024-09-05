@@ -506,24 +506,36 @@ function adjustBrightness($hex, $steps)
             };
 
             esp32_websocket.onmessage = function(event) {
-                var message = JSON.parse(event.data);
-                var doctorRoomNumber = message.doctorRoomNumber;
+                try {
+                    var message = JSON.parse(event.data);
+                    var doctorRoomNumber = message.doctorRoomNumber;
 
-                if (message.press === "single") {
-                    if (alertOpen) {
-                        alertOpen = false; // Close the alert
-                        console.log("Alert dismissed via IoT device");
-                    } else if (in_queue[doctorRoomNumber] && in_queue[doctorRoomNumber].queue) {
-                        update_queue_info(in_queue[doctorRoomNumber], doctorRoomNumber);
-                        updateQueueCounts(); // Update the total patient count
-                    } else {
-                        showAlertBanner("No Queue Available", doctorRoomNumber);
+                    if (message.action === "status") {
+                        // Reply to the ESP32's status request
+                        esp32_websocket.send(JSON.stringify({
+                            action: "status_response"
+                        }));
                     }
-                } else if (message.press === "double") {
-                    get_queue(doctorRoomNumber);
-                    updateQueueCounts(); // Update the total patient count after getting the next queue
+
+                    if (message.press === "single") {
+                        if (alertOpen) {
+                            alertOpen = false; // Close the alert
+                            console.log("Alert dismissed via IoT device");
+                        } else if (in_queue[doctorRoomNumber] && in_queue[doctorRoomNumber].queue) {
+                            update_queue_info(in_queue[doctorRoomNumber], doctorRoomNumber);
+                            updateQueueCounts(); // Update the total patient count
+                        } else {
+                            showAlertBanner("No Queue Available", doctorRoomNumber);
+                        }
+                    } else if (message.press === "double") {
+                        get_queue(doctorRoomNumber);
+                        updateQueueCounts(); // Update the total patient count after getting the next queue
+                    }
+                } catch (err) {
+                    console.warn("Error processing message:", err);
                 }
             };
+
 
         } catch (err) {
             console.warn("ESP32 device not connected:", err);
