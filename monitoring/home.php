@@ -227,6 +227,26 @@
       background-color: var(--doctor-5-color) !important;
     }
 
+    .list-group-item[data-id="6"] {
+      background-color: var(--doctor-6-color) !important;
+    }
+
+    .list-group-item[data-id="7"] {
+      background-color: var(--doctor-7-color) !important;
+    }
+
+    .list-group-item[data-id="8"] {
+      background-color: var(--doctor-8-color) !important;
+    }
+
+    .list-group-item[data-id="9"] {
+      background-color: var(--doctor-9-color) !important;
+    }
+
+    .list-group-item[data-id="10"] {
+      background-color: var(--doctor-10-color) !important;
+    }
+
 
 
     .doctor-room:hover .card-custom {
