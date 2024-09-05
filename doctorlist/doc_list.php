@@ -11,7 +11,7 @@ if (session_status() === PHP_SESSION_NONE) {
 require_once('./../DBConnection.php');
 $conn = new DBConnection();
 
-// Fetch active cashier (doctor) IDs
+// Fetch active cashier (doctor) data
 $active_cashiers_response = $conn->get_active_cashiers();
 $active_cashiers = json_decode($active_cashiers_response, true)['data'];
 $active_cashier_count = count($active_cashiers);
@@ -19,23 +19,24 @@ $active_cashier_count = count($active_cashiers);
 // Define an array to hold doctor colors
 $doctor_colors = array();
 
-// Extract colors from the index.php file
+// Extract colors from the home.php file
 $index_php_file = file_get_contents('home.php'); 
-// $index_php_file = file_get_contents(__FILE__); 
 preg_match_all('/--doctor-\d+-color: (.*?);/', $index_php_file, $matches);
 if ($matches) {
     $doctor_colors = $matches[1];
 }
 
-// Calculate the number of doctor rooms to display
-$doctor_room_count = min(10, $active_cashier_count); // Limit to maximum 10 rooms
+// Calculate the number of doctor rooms to display (max 10)
+$doctor_room_count = min(10, $active_cashier_count);
 
 // Prepare the JSON response
 $response = array("data" => array());
 for ($i = 0; $i < $doctor_room_count; $i++) {
+    $doctor_name = isset($active_cashiers[$i]['name']) ? $active_cashiers[$i]['name'] : "Doctor " . ($i + 1);
+    
     $response["data"][] = array(
-        "name" => "Doctor Room " . ($i + 1),
-        "color" => isset($doctor_colors[$i]) ? $doctor_colors[$i] : null // Check if color is set, otherwise set it to null
+        "name" => $doctor_name,
+        "color" => isset($doctor_colors[$i]) ? $doctor_colors[$i] : null // Check if color is set, otherwise set to null
     );
 }
 
@@ -46,6 +47,6 @@ $server_ip = file_get_contents('https://api.ipify.org');
 echo json_encode($response);
 
 // Output the server IP address
-echo "\n Server IP Address: " . $server_ip;
+echo "\nServer IP Address: " . $server_ip;
 echo " add this IP to ESP32";
 ?>
