@@ -12,7 +12,7 @@ Healthcare systems, especially in resource-limited environments like Sri Lanka, 
 - **Doctor Dashboard for Real-time Queue Management**
 - **Admin Control for User Management and KPI Monitoring**
 - **Secure Data Handling with AES-256-CBC Encryption**
-- **Machine Learning-based Queue Time Prediction (Random Forest Regression)**
+- **Machine Learning-based Queue Time Prediction (Random Forest Regression)** (yet to implement) 
 - **ESP32 Embedded Devices with OLED Display & LEDs**
 - **Offline Mode Support with mDNS-based Local Network Connectivity**
 
