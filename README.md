@@ -2,22 +2,6 @@
 
 <img width="577" alt="idh" src="https://github.com/user-attachments/assets/c9361d70-0eda-404a-8ec2-55d73b3240d9" />
 
-## International Conference on Applied and Pure Sciences, 2024  
-Faculty of Science, University of Kelaniya, Sri Lanka  
-
-### Abstract No: SO-09  
-#### A Cost-Effective and Adaptable Queue Management System to Increase Efficiency in Patient Queue Management
-
-### Authors:
-- **Adhikari A. M. N. D. S.** (Department of Physics and Electronics, University of Kelaniya, Sri Lanka)
-- **Gunarathna T. G. L.** (Department of Physics and Electronics, University of Kelaniya, Sri Lanka)
-- **Bandara K. D. Y.** (Department of Physics and Electronics, University of Kelaniya, Sri Lanka)
-- **Gunawardana K. D. B. H.** (Department of Physics and Electronics, University of Kelaniya, Sri Lanka)
-- **Seneviratne J. A.** (Department of Physics and Electronics, University of Kelaniya, Sri Lanka)
-- **Perera M. H. M. T. S.** (National Institute of Infectious Diseases, Sri Lanka)
-
----
-
 ## Introduction
 Healthcare systems, especially in resource-limited environments like Sri Lanka, struggle with high patient volumes and limited resources. These challenges lead to extended wait times and decreased patient satisfaction. Our **Queue Management System (QMS)** aims to replace inefficient manual methods, enhance operational efficiency, and optimize patient flow in hospitals and clinics.
 
